@@ -3,6 +3,11 @@ import type { DistKey, HillKey, SplitKey } from '../config';
 
 export type PlanState = {
   dist: DistKey;
+  /** False until the runner picks half or full. */
+  distSet: boolean;
+  /** False until the runner picks a finish time for that distance. */
+  timeSetHalf: boolean;
+  timeSetFull: boolean;
   targetHalf: number;
   targetFull: number;
   split: SplitKey;
@@ -22,6 +27,9 @@ const KEY = 'bcm27-plan-v1';
 
 export const PLAN_DEFAULT: PlanState = {
   dist: 'half',
+  distSet: false,
+  timeSetHalf: false,
+  timeSetFull: false,
   targetHalf: 5400,
   targetFull: 10800,
   split: 'jevn',
@@ -46,24 +54,20 @@ function load(): PlanState {
     const dist = p.dist === 'full' ? 'full' : 'half';
     const split = p.split === 'negativ' || p.split === 'positiv' ? p.split : 'jevn';
     const hill = p.hill === 'fort' || p.hill === 'sakte' ? p.hill : 'middels';
-    const savedView =
-      p.view === 'distanse' ||
-      p.view === 'profil' ||
-      p.view === 'splits' ||
-      p.view === 'mile' ||
-      p.view === 'band' ||
-      p.view === 'oppsummering'
-        ? p.view
-        : 'plan';
-    const view = p.tab === 'band' && savedView === 'splits' ? 'band' : savedView;
     const tab = p.tab === 'km' ? 'km' : 'seg';
+    // Refresh starter guiden på nytt: distanse og sluttid huskes ikke.
     return {
       ...PLAN_DEFAULT,
       ...p,
       dist,
+      distSet: false,
+      timeSetHalf: false,
+      timeSetFull: false,
+      targetHalf: PLAN_DEFAULT.targetHalf,
+      targetFull: PLAN_DEFAULT.targetFull,
       split,
       hill,
-      view,
+      view: 'distanse',
       tab,
       sigma: typeof p.sigma === 'number' ? p.sigma : 2,
       stopOn: typeof p.stopOn === 'number' ? Math.max(0, Math.min(120, p.stopOn)) : 10,
@@ -97,6 +101,31 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
+export type GuideStep = 1 | 2 | 3 | 4 | 5;
+
+export function timeIsSet(state: PlanState): boolean {
+  return state.dist === 'full' ? state.timeSetFull : state.timeSetHalf;
+}
+
+/** The step the runner should take next. Null on the summary, when the path is done. */
+export function guideAttention(state: PlanState): GuideStep | null {
+  if (!state.distSet) return 1;
+  if (!timeIsSet(state)) return 2;
+  switch (state.view) {
+    case 'distanse':
+    case 'plan':
+      return 3;
+    case 'splits':
+    case 'profil':
+    case 'band':
+      return 4;
+    case 'mile':
+      return 5;
+    default:
+      return null;
+  }
+}
+
 export function usePlan(): Api {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error('PlanProvider mangler');
@@ -127,13 +156,19 @@ function navHeightPx(scope: ParentNode): number {
   return nav?.getBoundingClientRect().height ?? 72;
 }
 
-export function scrollToId(id: string, block: ScrollLogicalPosition = 'start') {
+function railHeightPx(): number {
+  const rail = document.getElementById('step-rail');
+  if (!rail || getComputedStyle(rail).position !== 'sticky') return 0;
+  return rail.getBoundingClientRect().height;
+}
+
+export function scrollToId(id: string, block: ScrollLogicalPosition = 'start', pinRail = true) {
   const el = document.getElementById(id);
   if (!el) return;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
   const root = phoneScrollRoot(el);
-  const offset = navHeightPx(root ?? document) + 8;
+  const offset = navHeightPx(root ?? document) + (pinRail && id !== 'step-rail' ? railHeightPx() : 0) + 8;
 
   if (root) {
     const rootRect = root.getBoundingClientRect();
@@ -166,6 +201,19 @@ export function scrollToView(view: PlanState['view']) {
   const id = VIEW_SCROLL_ID[view];
   const block = VIEW_SCROLL_ALIGN[view] ?? 'start';
   const run = () => scrollToId(id, block);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      run();
+      if (document.querySelector('.preview-phone-frame')) {
+        window.setTimeout(run, 60);
+      }
+    });
+  });
+}
+
+/** Legg stegraden (1–5) helt øverst, rett under menyen. */
+export function scrollToStepRail() {
+  const run = () => scrollToId('step-rail', 'start', false);
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       run();

@@ -34,9 +34,7 @@ export function Footer() {
   return (
     <footer className="site">
       <div className="wrap">
-        <p className="independence">
-          <ExternalLinks text={m.footer.independence} />
-        </p>
+        <p className="independence">{m.footer.independence}</p>
         <p>
           <ExternalLinks text={m.footer.sources} />
         </p>

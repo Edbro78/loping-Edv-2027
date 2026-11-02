@@ -4,7 +4,7 @@ import { OwnerDeviceSeg, OwnerLangSeg } from './OwnerToolbar';
 import { useUi } from '../i18n/useUi';
 import { showOwnerTools } from '../state/previewLocale';
 
-const ROUTES: { to: string; key: 'home' | 'loypeguide' | 'hoydeprofil' | 'tempoplan' | 'tempostrategi' | 'praktisk' | 'trening' | 'om' }[] = [
+const ROUTES: { to: string; key: 'home' | 'loypeguide' | 'hoydeprofil' | 'tempoplan' | 'tempostrategi' | 'praktisk' | 'trening' | 'om' | 'beste' }[] = [
   { to: '/', key: 'home' },
   { to: '/loypeguide', key: 'loypeguide' },
   { to: '/hoydeprofil', key: 'hoydeprofil' },
@@ -13,6 +13,7 @@ const ROUTES: { to: string; key: 'home' | 'loypeguide' | 'hoydeprofil' | 'tempop
   { to: '/praktisk', key: 'praktisk' },
   { to: '/trening', key: 'trening' },
   { to: '/om', key: 'om' },
+  { to: '/slik-lop-de-beste', key: 'beste' },
 ];
 
 function NavRouteLinks({

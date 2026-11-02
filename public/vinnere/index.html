@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinnerne av Bergen City Marathon 2024–2026</title>
+<!--
+  Bergen City Marathon 2024–2026 – interaktiv løpsanalyse
+  ----------------------------------------------------------------------------
+  Én HTML-fil med HTML, CSS og vanlig JavaScript. Ingen byggesteg.
+  Avhengigheter:
+    • fonts/SoderbergSans-*Italic.otf  (ligger ved siden av denne filen)
+    • Boxicons 2.1.4 fra unpkg (ikoner)
+  Innbygging i egen fane:
+    <iframe src="/bcm-rapport/index.html" style="width:100%;height:100vh;border:0"></iframe>
+  Innstillinger: se CONFIG øverst i <script>.
+-->
+<link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+<style>
+/* ===== 1. Font (samme Archivo som resten av løpeguiden) ===== */
+@font-face{font-family:"Archivo Variable";src:url("fonts/archivo-latin-standard-normal.woff2") format("woff2");font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+
+/* ===== 2. Designtokens (samme palett som løpeguiden) ===== */
+:root{
+  --font:"Archivo Variable","Archivo","Helvetica Neue",Arial,system-ui,sans-serif;
+  --navy:#12304a; --blue:#d03808; --blue-hover:#f05a1a; --blue-100:#fde8dc;
+  --orange:#f05a1a; --orange-600:#d03808; --orange-700:#d03808; --orange-border:#f6c2ae; --orange-bg:#fde8dc;
+  --gray-50:#f6f1ee; --gray-100:#e9eef0; --gray-200:#d5dfe7; --gray-300:#c5d0da; --gray-400:#8aa3b8;
+  --gray-500:#2f5573; --gray-600:#2f5573; --gray-700:#12304a;
+  --white:#ffffff;
+}
+
+/* ===== 3. Grunnstiler ===== */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--gray-50);color:var(--navy);font-family:var(--font);-webkit-font-smoothing:antialiased}
+#bcm,#bcm button,#bcm input{font-family:var(--font);font-style:normal}
+#bcm{color:var(--navy);background:var(--gray-50);min-height:100vh}
+a{color:var(--blue);text-decoration:none}a:hover{color:var(--blue-hover);text-decoration:underline}
+h1,h2,h3,p{margin:0}
+input[type=range]{accent-color:var(--orange);width:100%;height:28px;cursor:pointer;margin:0}
+svg{display:block}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}#bcm *{transition:none!important}}
+
+/* ===== 4. Layout og komponenter ===== */
+.wrap{max-width:1160px;margin:0 auto;padding:clamp(16px,4vw,40px);display:flex;flex-direction:column;gap:48px}
+.col{display:flex;flex-direction:column}
+.section{display:flex;flex-direction:column;gap:24px}
+.head{display:flex;flex-direction:column;gap:8px}
+.head-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-700)}
+h2{font-size:clamp(28px,3vw,36px);line-height:1.1;font-weight:750;font-stretch:75%;letter-spacing:-0.01em;color:var(--navy)}
+h3{font-size:22px;font-weight:700;line-height:1.25;font-stretch:75%;letter-spacing:-0.01em;color:var(--navy)}
+.lead{font-size:16px;line-height:24px;color:var(--gray-600)}
+.muted{color:var(--gray-500)}
+.card{background:var(--white);border:1px solid var(--gray-200);border-radius:10px}
+.sub{font-size:14px;color:var(--gray-500)}
+.lbl{font-size:13px;color:var(--gray-500)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--gray-600)}
+.legend>span{display:flex;align-items:center;gap:6px}
+.rel{position:relative}
+.ico{color:var(--orange-600)}
+
+/* Header */
+.hero{
+  background:
+    radial-gradient(900px 280px at 12% 0%, rgb(255 176 90 / 0.45), transparent 60%),
+    linear-gradient(115deg, #ff7a2f 0%, #f05a1a 46%, #e24a0c 100%);
+  color:#fff;border-radius:0;padding:clamp(28px,5vw,56px) clamp(16px,4vw,40px);
+  margin:calc(clamp(16px,4vw,40px) * -1) calc(clamp(16px,4vw,40px) * -1) 0;
+  display:flex;flex-direction:column;gap:32px}
+.hero h1{font-weight:800;font-stretch:75%;font-size:clamp(34px,5vw,56px);line-height:1.05;letter-spacing:-0.01em;color:#fff;text-wrap:balance}
+.hero p{font-size:clamp(17px,2vw,20px);line-height:1.5;color:#fff;text-wrap:pretty}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--white);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:4px}
+.kpi b{font-size:clamp(28px,3.4vw,40px);white-space:nowrap;font-weight:600;line-height:1.1;letter-spacing:-.02em;color:var(--navy)}
+.kpi span{font-size:14px;line-height:20px;color:var(--gray-600)}
+.kpi.dark{background:#0c2236}.kpi.dark b{color:#fff}.kpi.dark span{color:#fde8dc}
+
+/* Navigasjon */
+.nav{position:sticky;top:0;z-index:5;background:rgba(249,250,251,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);margin:-24px 0;padding:12px 0;display:flex;gap:8px;overflow-x:auto}
+.nav a{flex:none;padding:8px 14px;border-radius:100px;border:1px solid var(--gray-200);background:var(--white);font-size:14px;font-weight:500;color:var(--navy);text-decoration:none}
+.nav a:hover{background:var(--orange-bg);border-color:var(--orange-border);text-decoration:none;color:var(--navy)}
+
+/* Innsiktskort */
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.insight{padding:24px;display:flex;flex-direction:column;gap:12px}
+.insight i{font-size:28px}
+.insight p{font-size:15px;line-height:24px;color:var(--gray-600);text-wrap:pretty}
+
+/* Segmentkontroll */
+.seg{display:flex;gap:2px;padding:3px;background:var(--gray-100);border-radius:999px}
+.seg button{border:none;border-radius:999px;padding:8px 16px;font-size:14px;font-weight:650;cursor:pointer;background:transparent;color:var(--navy)}
+.seg button.on{background:#fff;color:var(--blue);box-shadow:0 8px 24px rgb(18 48 74 / 0.18)}
+
+/* Badge og knapp (designsystemet) */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;padding:4px 12px;border-radius:100px;line-height:1.3;white-space:nowrap}
+.badge.brand{background:var(--blue-100);color:var(--blue)}
+.badge.warning{background:var(--orange-bg);color:var(--orange-700)}
+.badge.neutral{background:var(--gray-100);color:var(--gray-700)}
+.btn{font-weight:650;cursor:pointer;border-radius:999px;border:2px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;line-height:1;transition:background .15s,border-color .15s,color .15s;font-size:15px;min-height:44px;padding:0 20px;background:var(--orange);color:#fff}
+.btn:hover{background:var(--orange-600);color:#fff}
+.btn i{font-size:18px}
+
+/* Etiketter over SVG */
+.lb{position:absolute;white-space:nowrap;pointer-events:none;line-height:1;text-shadow:0 0 3px #FFF,0 0 3px #FFF,0 0 3px #FFF}
+
+/* Bryter */
+.toggle{display:flex;align-items:center;gap:10px;border:none;background:none;font-size:14px;font-weight:500;color:var(--navy);cursor:pointer;padding:4px}
+.toggle .track{width:40px;height:22px;border-radius:100px;position:relative;transition:background 200ms ease-out;flex:none}
+.toggle .knob{position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:#FFF;box-shadow:0 1px 2px rgba(16,24,40,.2);transition:left 200ms ease-out}
+
+/* Data-trekkspill */
+.data-btn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 24px;border:none;background:var(--white);cursor:pointer;color:var(--navy);text-align:left}
+.data-btn:hover{background:var(--gray-50)}
+</style>
+</head>
+<body>
+<div id="bcm"></div>
+
+<script>
+/* =====================================================================
+   0. KONFIGURASJON
+   ===================================================================== */
+const CONFIG = {
+  startDistance: 'Halvmaraton', // 'Halvmaraton' | 'Maraton'
+  autoplayDuel: false,          // spill av duellen automatisk ved lasting
+  showSourcesOpen: false        // vis «Datagrunnlag og kilder» åpen
+};
+
+/* =====================================================================
+   1. LØYPEDATA
+   Fra offisiell GPX (BCM 2025), resamplet hver 50. meter og skalert
+   til 21,1 km. p = [x, y, høyde_moh], x/y i et 1000-bredt koordinatsystem.
+   ===================================================================== */
+const BCM_COURSE = {"w":1000,"h":1421,"step":0.05,"p":[[324,709,5],[314,699,6],[304,688,6],[295,677,6],[285,667,6],[275,657,6],[261,653,6],[247,650,6],[236,641,6],[227,630,7],[218,619,7],[214,605,7],[208,592,8],[203,578,8],[214,571,9],[228,566,11],[240,558,13],[250,548,14],[264,545,15],[278,548,15],[289,540,15],[295,527,15],[299,513,13],[296,499,12],[291,485,10],[295,471,12],[304,460,14],[315,451,16],[326,443,18],[333,430,18],[329,417,16],[321,404,12],[314,392,10],[310,378,7],[312,364,6],[313,349,7],[314,335,9],[317,321,11],[319,307,13],[322,292,15],[325,278,14],[327,264,13],[326,249,12],[325,235,10],[316,225,8],[307,214,7],[300,201,6],[302,186,7],[299,172,8],[293,159,11],[286,147,13],[275,137,15],[263,130,17],[251,122,18],[239,113,17],[227,105,15],[213,101,13],[201,95,10],[191,86,9],[179,77,9],[167,71,9],[153,65,10],[143,56,11],[132,47,12],[124,35,13],[116,23,15],[126,19,18],[140,19,22],[147,7,26],[155,0,30],[157,14,34],[168,24,36],[181,28,40],[194,33,43],[208,30,45],[208,40,47],[209,54,49],[213,68,48],[225,76,47],[237,83,45],[248,93,43],[260,101,42],[272,109,40],[286,112,38],[298,119,37],[311,127,37],[324,132,37],[338,135,37],[351,141,39],[362,150,42],[371,161,45],[377,174,49],[386,186,54],[391,199,58],[392,213,61],[396,227,64],[400,241,66],[403,255,66],[410,268,66],[417,280,66],[424,293,66],[428,307,66],[434,319,70],[439,333,73],[439,327,78],[445,329,83],[451,342,88],[454,356,91],[457,370,93],[461,383,95],[463,397,96],[470,410,98],[473,424,100],[472,438,103],[476,452,106],[476,466,109],[466,476,111],[459,489,113],[457,503,113],[452,516,113],[450,529,112],[453,544,112],[451,558,111],[452,572,110],[456,586,109],[456,600,108],[454,615,108],[459,628,108],[466,641,109],[471,654,109],[478,667,110],[482,681,111],[483,695,112],[484,710,112],[491,722,112],[499,734,113],[505,747,114],[500,761,115],[496,775,117],[499,789,119],[506,801,119],[517,811,119],[525,822,119],[536,832,119],[546,842,119],[554,854,119],[561,867,118],[569,879,118],[578,890,117],[590,898,116],[603,904,116],[617,909,116],[630,915,117],[642,923,119],[654,931,121],[664,941,122],[676,949,122],[690,954,122],[703,960,121],[717,964,120],[728,970,118],[736,982,116],[743,995,114],[751,1007,112],[761,1016,110],[771,1027,109],[779,1039,108],[793,1044,106],[805,1052,105],[807,1066,103],[816,1077,100],[826,1087,98],[838,1096,97],[848,1088,97],[861,1082,95],[873,1089,93],[883,1100,90],[893,1110,85],[903,1120,80],[912,1131,76],[925,1135,74],[937,1142,72],[948,1150,70],[959,1158,69],[966,1170,69],[962,1183,70],[954,1195,69],[958,1209,69],[965,1209,67],[972,1197,65],[978,1184,63],[982,1170,62],[990,1162,62],[1000,1171,62],[997,1186,63],[990,1198,64],[981,1210,65],[971,1220,66],[966,1233,68],[964,1247,69],[958,1261,71],[953,1274,74],[947,1287,76],[944,1301,77],[941,1315,76],[949,1324,73],[938,1331,68],[929,1340,64],[931,1355,61],[930,1369,60],[917,1374,62],[909,1385,65],[902,1397,69],[899,1411,71],[893,1421,72],[878,1421,71],[864,1419,69],[850,1419,66],[835,1419,63],[821,1419,62],[806,1419,61],[792,1418,60],[779,1413,59],[765,1407,56],[757,1396,53],[750,1383,50],[741,1373,46],[732,1361,44],[723,1350,41],[711,1342,38],[700,1333,36],[689,1323,33],[679,1313,30],[668,1303,29],[655,1298,29],[640,1299,29],[626,1301,28],[612,1301,27],[599,1294,25],[587,1286,22],[574,1280,20],[560,1278,21],[551,1274,23],[565,1273,24],[580,1273,24],[594,1277,23],[608,1280,20],[622,1281,16],[637,1280,13],[651,1276,11],[664,1270,10],[677,1265,9],[691,1268,7],[699,1279,7],[708,1291,9],[720,1298,10],[733,1305,11],[745,1313,12],[758,1319,14],[772,1318,15],[787,1319,16],[801,1318,16],[808,1306,16],[800,1295,15],[790,1284,13],[781,1273,13],[786,1259,13],[791,1246,13],[794,1232,12],[791,1218,11],[788,1204,9],[785,1190,7],[775,1179,6],[768,1166,5],[760,1154,5],[752,1143,4],[741,1134,4],[729,1126,4],[716,1118,4],[703,1112,4],[690,1108,4],[675,1105,5],[661,1104,5],[647,1103,5],[633,1098,4],[620,1091,4],[609,1083,5],[596,1075,7],[583,1070,8],[570,1064,10],[557,1058,11],[544,1051,11],[536,1043,10],[549,1049,10],[562,1056,9],[574,1063,10],[587,1070,12],[600,1077,13],[609,1086,13],[598,1094,12],[586,1103,11],[579,1115,9],[574,1129,7],[569,1143,6],[564,1156,5],[553,1165,5],[541,1174,4],[529,1182,3],[522,1194,3],[511,1188,3],[500,1181,3],[486,1181,3],[473,1180,5],[464,1185,9],[461,1199,12],[449,1206,15],[436,1200,16],[423,1192,17],[411,1185,15],[399,1177,13],[385,1172,11],[371,1169,10],[358,1164,11],[345,1164,11],[336,1175,12],[323,1171,12],[311,1162,12],[299,1155,12],[287,1147,11],[276,1138,11],[264,1129,11],[254,1119,11],[242,1112,12],[232,1102,11],[226,1089,10],[224,1075,9],[227,1061,9],[225,1047,9],[216,1035,11],[208,1023,13],[201,1011,14],[196,997,14],[190,984,13],[188,971,12],[181,958,11],[173,946,11],[167,932,12],[170,919,12],[176,906,12],[165,898,11],[154,889,10],[141,882,10],[142,874,11],[156,877,12],[169,882,12],[178,876,12],[176,862,11],[190,864,11],[197,855,10],[203,842,11],[216,836,12],[225,825,13],[221,815,15],[208,808,16],[196,801,18],[184,793,20],[189,779,22],[189,769,24],[176,763,27],[163,755,29],[151,747,31],[139,740,32],[127,731,34],[117,721,35],[108,710,36],[94,709,37],[81,707,39],[71,696,40],[60,687,41],[46,682,40],[33,676,38],[25,665,33],[17,653,28],[8,641,24],[0,629,21],[5,616,18],[13,604,17],[27,601,16],[41,603,16],[54,609,15],[61,621,15],[73,630,15],[85,637,15],[97,645,15],[107,656,16],[118,665,17],[128,675,17],[137,686,18],[146,698,20],[157,707,22],[170,712,24],[183,716,25],[193,707,24],[202,718,21],[214,726,18],[229,727,15],[241,733,13],[252,742,13],[264,751,15],[274,761,15],[286,769,15],[297,763,15],[309,771,13],[320,780,12],[333,787,11],[346,793,11],[356,784,9],[363,771,8],[370,759,6],[364,747,5],[353,737,4],[344,726,4]]};
+
+/* =====================================================================
+   2. HJELPEFUNKSJONER
+   ===================================================================== */
+const P = s => { if (s == null) return null; const a = String(s).split(':').map(Number); return a.length === 3 ? a[0] * 3600 + a[1] * 60 + a[2] : a[0] * 60 + a[1]; };
+const F = s => { s = Math.round(Math.abs(s)); const m = Math.floor(s / 60), r = s % 60; return m + ':' + String(r).padStart(2, '0'); };
+const G = s => { const a = Math.abs(Math.round(s)); return a < 60 ? a + ' s' : F(a); };
+const km = k => String(k).replace('.', ',');
+const lap = k => k > 21.1 ? Math.min(21.1, k - 21.1) : k;
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const map = (list, fn) => list.map(fn).join('');
+
+const GEO = (() => {
+  const C = BCM_COURSE, p = C.p, n = p.length - 1, I = k => Math.max(0, Math.min(n, Math.round(k / C.step)));
+  const gain = (a, b) => { let up = 0, dn = 0, ref = p[I(a)][2]; for (let k = I(a) + 1; k <= I(b); k++) { const e = p[k][2]; if (e - ref >= 3) { up += e - ref; ref = e; } else if (ref - e >= 3) { dn += ref - e; ref = e; } } return [Math.round(up), Math.round(dn)]; };
+  const pts = (a, b) => p.slice(I(a), I(b) + 1).map(q => q[0] + ',' + q[1]).join(' ');
+  return { C, p, n, I, gain, pts, at: k => p[I(k)], all: pts(0, 21.1) };
+})();
+const hoyde = (a, b) => { const [u, d] = GEO.gain(a, b); return { t: '+' + u + ' m / −' + d + ' m', s: GEO.at(a)[2] + ' → ' + GEO.at(b)[2] + ' moh' }; };
+
+/* =====================================================================
+   3. RAPPORTDATA (UltimateLIVE mellomtider 2024–2026)
+   ===================================================================== */
+const toSeg = a => a.map(s => ({ a: s[0], b: s[1], navn: s[2], sted: s[3], terr: s[4] }));
+const DATA = {
+  hmSeg: toSeg([[0, 4.6, 'Start–4,6 km', 'Gamle Bergen, Sandviken-bakken, BKK Fjellveien', 'blandet'], [4.6, 8.2, '4,6–8,2 km', 'Mon Plaisir, Tippetue, toppen av Fjellveien', 'bakke'], [8.2, 10, '8,2–10 km', 'Svartediket ned til Haraldsplass', 'ned'], [10, 15.9, '10–15,9 km', 'Grønneviksøren, AdO, Møhlenpris', 'flat'], [15.9, 17.9, '15,9–17,9 km', 'Hurtigruteterminalen', 'flat'], [17.9, 21.1, '17,9 km–mål', 'Munkebekksmauet, Nordnes, mål', 'blandet']]),
+  mSeg: toSeg([[0, 3.2, '0–3,2 km', 'Gamle Bergen, Sandviken', 'flat'], [3.2, 5.6, '3,2–5,6 km', 'Sandviken-bakken og Mon Plaisir', 'bakke'], [5.6, 10, '5,6–10 km', 'Tippetue, Fjellveien, Svartediket', 'blandet'], [10, 15.9, '10–15,9 km', 'Rundt Store Lungegårdsvann', 'flat'], [15.9, 17.9, '15,9–17,9 km', 'Hurtigruteterminalen', 'flat'], [17.9, 21.1, '17,9–21,1 km', 'Munkebekksmauet, Nordnes', 'blandet'],
+    [21.1, 25.7, 'Bryggen–BKK', 'Sandviken-bakken, runde 2', 'bakke'], [25.7, 29.3, 'BKK–toppen av Fjellveien', 'Mon Plaisir, runde 2', 'bakke'], [29.3, 31.1, 'Svartediket ned', 'Ned til Haraldsplass, runde 2', 'ned'], [31.1, 37, 'Haraldsplass–Møhlenpris', 'Rundt vannet, runde 2', 'flat'], [37, 40.1, 'Møhlenpris–Nordnes', 'Havnen, Munkebekksmauet, runde 2', 'blandet'], [40.1, 42.2, 'Nordnes–mål', 'Avslutningen', 'blandet']]),
+  races: {
+    hm: {
+      menn: {
+        2024: { navn: 'Marius Garmann Sørli', tid: '1:09:36', pace: ['3:12', '3:23', '3:06', '3:16', '3:31', '3:23'], splitShort: '3:15 / 3:21', splitType: 'Positiv', margin: '5 s', rival: 'Frew Zenebe Brkineh', gap: [[0, 0], [4.6, 0], [8.2, 0], [10, 0], [17.8, 2], [21.1, 5]], text: 'Sørli åpnet hardest av alle tolv vinnerne: 3:12 per km de første 4,6 km, med Sandviken-bakken. Deretter gikk farten ned. Frew Zenebe Brkineh lå ved siden av ham hele veien, og ved 17,8 km var avstanden bare 2 sekunder. Sørli vant de siste 3,3 km over Munkebekksmauet og Nordnes med 3 sekunder (11:09 mot 11:12). Havnestrekket var hans tregeste flate strekk (3:31), noe som tyder på at begge løp taktisk før avslutningen.', note: 'Målepunktene sto ved 15,8 og 17,8 km i 2024.' },
+        2025: { navn: 'Marius Garmann Sørli', tid: '1:11:45', pace: ['3:31', '3:31', '3:16', '3:16', '3:28', '3:22'], segNote: { 2: 'Snitt for 8,2–15,9 km (10 km mangler)', 3: 'Snitt for 8,2–15,9 km (10 km mangler)' }, splitShort: '3:31 / 3:20', splitType: 'Negativ', margin: '9 s', rival: 'Frew Zenebe Brkineh', gap: [[0, 0], [17.9, 0], [21.1, 9]], text: 'Samme to løpere, samme mønster – men denne gangen åpnet Sørli forsiktig, 3:31 per km gjennom begge bakkestrekkene. Fra toppen av Fjellveien økte han til 3:16 per km ned Svartediket og rundt vannet. Sørli og Brkineh passerte 17,9 km på samme tid, og Sørli løp de siste 3,2 km 9 sekunder raskere (10:47 mot 10:56). Negativ split og sterk avslutning.', note: 'Sørli mangler passering ved 10 km. Split er regnet fra 8,2 km.' },
+        2026: { navn: 'Kristian Blummenfelt', tid: '1:08:44', pace: ['3:19', '3:23', '3:18', '3:09', '3:11', '3:15'], splitShort: '3:20 / 3:11', splitType: 'Negativ', margin: '8 s', rival: 'Reidar Austrheim', gap: [[0, 0], [17.9, 0], [21.1, 8]], text: 'Det mest kontrollerte løpet av de tre. Blummenfelt åpnet på 3:19–3:23 gjennom bakkene, holdt seg rolig ned Svartediket (3:18) og økte til 3:09–3:11 på flatene. Reidar Austrheim fulgte ham til 17,9 km, der de passerte på samme sekund. Blummenfelt løp de siste 3,2 km på 10:25 mot 10:33 og vant med 8 sekunder.' }
+      },
+      kvinner: {
+        2024: { navn: 'Ina Rilvaag', tid: '1:17:23', pace: ['3:45', '3:50', '3:28', '3:33', '3:40', '3:41'], splitShort: '3:44 / 3:37', splitType: 'Negativ', margin: '2:57', rival: 'Ane Brekke', gap: [[0, 0], [4.6, 22], [10, 72], [21.1, 177]], text: 'Rilvaag løp alene fra start. Hun ledet med 22 sekunder ved 4,6 km og 72 sekunder ved 10 km. Hun åpnet kontrollert, la inn det raskeste strekket ned Svartediket, og andre halvdel gikk 7 sekunder per km raskere enn første. Avstanden økte ved hvert eneste målepunkt.' },
+        2025: { navn: 'Mari Fosse Vaksdal', tid: '1:20:24', pace: ['3:56', '3:58', '3:12', '3:45', '3:46', '3:56'], splitShort: '3:49 / 3:48', splitType: 'Jevn', margin: '27 s', rival: 'Adele Norheim Henriksen', gap: [[0, 0], [8.2, 13], [10, 13], [17.9, 6], [21.1, 27]], text: 'Det jevneste løpet av alle: 3:49 per km på de første 10 km og 3:48 på resten. Adele Norheim Henriksen hentet inn halvparten av ledelsen rundt vannet, og ved 17,9 km var avstanden 6 sekunder. Vaksdal avgjorde over Munkebekksmauet og Nordnes: 12:35 mot 12:56 på de siste 3,2 km. Hun utnyttet nedoverbakken mest av vinnerne (3:12 ned Svartediket).' },
+        2026: { navn: 'Bethine Riise Carlsen', tid: '1:17:46', pace: ['3:48', '3:48', '3:34', '3:30', '3:47', '3:46'], splitShort: '3:45 / 3:38', splitType: 'Negativ', margin: '31 s', rival: 'Ragnhild Mongstad', gap: [[0, 0], [17.9, -1], [21.1, 31]], text: 'Den mest dramatiske avslutningen. Ragnhild Mongstad lå 1–4 sekunder foran ved alle målepunkter til og med 17,9 km. Så løp Riise Carlsen de siste 3,2 km på 12:01 mot 12:33 og vant med 31 sekunder – 32 sekunder tatt på 3,2 km etter å ha ligget bak i nesten 18 km. Hun løp flatene rundt vannet raskere enn nedoverbakken (3:30 mot 3:34).', note: 'Mongstad lå 1–4 s foran ved alle tidligere målepunkter. Bare passeringen ved 17,9 km er vist.' }
+      }
+    },
+    m: {
+      menn: {
+        2024: { navn: 'Tage Morken Augustson', tid: '2:27:36', pace: ['3:30', '4:00', '3:16', '3:19', '3:28', '3:35', '3:44', '3:37', null, '3:21', '3:51', null], r2t: ['17:12', '13:00', '6:07', '19:45', '11:55', '6:27'], splitShort: '+1:16', splitType: 'Positiv', margin: '4:51', rival: 'Jarand Blom', gap: [[0, 0], [31.1, 0], [37, 97], [40.1, 158], [42.2, 291]], text: 'Augustson og Jarand Blom løp sammen i 31 km, innenfor 3 sekunder ved hvert målepunkt. Rundt Store Lungegårdsvann i andre runde løp Augustson 19:45 mot Bloms 21:19 og fikk 1:37 på 6 km. Gapet var 2:38 ved Nordnes og 4:51 i mål. Avgjørelsen var et rykk på flatene – ikke i bakkene, ikke på slutten.', note: 'Halvveis 1:13:10, andre halvdel 1:14:26.' },
+        2025: { navn: 'Tage Morken Augustson', tid: '2:24:50', pace: ['3:26', '3:48', '3:10', '3:15', '3:17', '3:31', '3:36', '3:40', null, '3:25', '3:51', null], r2t: ['16:34', '13:11', '5:18', '20:10', '11:57', '6:38'], splitShort: '+2:46', splitType: 'Positiv', margin: '2:55', rival: 'Karl Jonas Tronstad', gap: [[0, 0], [15.9, -7], [17.9, -7], [21.1, 0], [25.7, 8], [29.3, 21], [31.1, 25], [37, 62], [40.1, 133], [42.2, 175]], text: 'Hans raskeste seier og raskeste åpning: 1:11:02 halvveis. Karl Jonas Tronstad var 7 sekunder foran ved 15,9 og 17,9 km, og de passerte halvveis på samme sekund. Augustson dro gradvis fra i andre runde: 8 sekunder ved BKK Fjellveien, 25 ved Haraldsplass, 1:02 ved Møhlenpris. Tronstads største tap kom over Munkebekksmauet og Nordnes (13:08 mot 11:57).', note: 'Halvveis 1:11:02, andre halvdel 1:13:48.' },
+        2026: { navn: 'Tage Morken Augustson', tid: '2:34:06', pace: ['3:37', '4:01', '3:30', '3:21', '3:33', '3:49', '3:43', '3:42', null, '3:28', '4:27', null], r2t: ['17:04', '13:20', '6:14', '20:26', '13:48', '7:35'], splitShort: '+2:48', splitType: 'Positiv', margin: '1:49', rival: 'Takle Eide', gap: [[0, 0], [15.9, 0], [17.9, 18], [21.1, 32], [37, 161], [40.1, 135], [42.2, 109]], text: 'Den tregeste av de tre seirene. Takle Eide fulgte ham til 15,9 km. Augustson fikk 18 sekunder på havnestrekket og 2:41 ved Møhlenpris i andre runde. Så stivnet han: over Munkebekksmauet og Nordnes og inn til mål krympet marginen fra 2:41 til 1:49. Eneste seier av de tolv der vinneren hadde den svakeste avslutningen av de to fremste.', note: 'Halvveis 1:15:39, andre halvdel 1:18:27.' }
+      },
+      kvinner: {
+        2024: { navn: 'Renate Galleberg', tid: '2:52:40', pace: ['4:12', '4:34', '3:53', '4:00', '4:06', '4:07', '4:17', '4:09', null, '3:54', '4:28', null], r2t: ['19:43', '14:56', '7:09', '23:01', '13:52', '7:32'], splitShort: '−0:14', splitType: 'Negativ', margin: '17:15', rival: 'Ingrid Andersen', gap: [[0, 0], [3.2, 66], [10, 279], [21.1, 519], [42.2, 1035]], text: 'Det mest suverene løpet av alle tolv. Galleberg ledet med 1:06 ved 3,2 km, 4:39 ved 10 km og 8:39 halvveis, og vant 17:15 foran Ingrid Andersen. Eneste maratonvinner med negativ split (−14 s). Andre runde rundt vannet gikk raskere enn første (3:54 mot 4:00).', note: 'Ledelsen underveis er mot nærmeste konkurrent.' },
+        2025: { navn: 'Jenny Nesje', tid: '3:03:39', pace: ['4:12', '4:40', '3:57', '4:04', '4:04', '4:27', '4:37', '4:39', null, '4:21', '5:08', null], r2t: ['21:15', '16:44', '6:44', '25:42', '15:54', '8:56'], splitShort: '+6:51', splitType: 'Positiv', margin: '5:20', rival: 'Ingrid Andersen', gap: [[0, 0], [37, 414], [42.2, 320]], text: 'Nesje ledet fra start og bygde 6:54 i ledelse fram til Møhlenpris i andre runde. Så kom fallet: andre halvdel gikk 6:51 saktere enn første, og over Munkebekksmauet og Nordnes falt farten til rundt 5:08 per km. Ingrid Andersen tok inn 1:34 de siste rundt 5 km, men ledelsen holdt.', note: 'Halvveis 1:28:24, andre halvdel 1:35:15.' },
+        2026: { navn: 'Live Tjemsland', tid: '2:45:21', pace: ['4:04', '4:17', '3:48', '3:38', '3:57', '3:58', '4:02', '4:02', null, '3:45', '4:28', null], r2t: ['18:33', '14:32', '7:09', '22:05', '13:51', '7:11'], splitShort: '+1:21', splitType: 'Positiv', margin: '1:35–2:00', rival: 'Mari Fosse Vaksdal', gap: [[0, 0], [3.2, -10], [5.6, -6], [15.9, 18], [21.1, 52], [25.7, 99]], text: 'Tjemsland åpnet bak Mari Fosse Vaksdal, tok ledelsen ned mot Haraldsplass og økte gradvis. Det største rykket kom i Sandviken-bakken i runde to (18:33 mot 19:20). Deretter lå avstanden stabilt på 1:35–2:00 til mål. Hun løp flatene rundt vannet raskest av alle i andre runde (3:45).', note: 'Nøyaktig margin i mål er ikke oppgitt; avstanden lå på 1:35–2:00 etter 25,5 km.' }
+      }
+    }
+  },
+  course: [
+    { range: 'Start–4,6 km', d: 4.6, steder: 'Gamle Bergen, Sandviken, BKK Fjellveien', terreng: 'Flatt, så Sandviken-bakken (3,2–3,5 km)', drikke: 'Sandviken (3,2–3,5 km)', terr: 'blandet', innsikt: 'Nesten alle vinnerne åpnet forsiktig: de første 3,2 km gikk 10–15 s/km saktere enn flatene senere. Unntaket er Sørli 2024, som åpnet på 3:12.' },
+    { range: '4,6–8,2 km', d: 3.6, steder: 'Mon Plaisir, Tippetue, toppen av Fjellveien', terreng: 'Mon Plaisir-bakken (4,6–5,6 km), deretter flatt', drikke: 'Tippetue (5,6–7,2 km)', terr: 'bakke', innsikt: 'Bakketillegget var +7 til +18 s/km på halvmaraton. Ingen vinner presset her – de løp på samme relative innsats som de andre.' },
+    { range: '8,2–10 km', d: 1.8, steder: 'Svartediket, Haraldsplass', terreng: 'Nedover', drikke: 'Haraldsplass (9,3–10 km)', terr: 'ned', innsikt: 'Raskeste strekk for Sørli 2024 (3:06), Rilvaag (3:28) og Vaksdal (3:12). Blummenfelt og Riise Carlsen holdt igjen her – og vant med sterk avslutning.' },
+    { range: '10–15,9 km', d: 5.9, steder: 'Grønneviksøren, AdO, Møhlenpris', terreng: 'Nedover, så flatt rundt vannet', drikke: 'AdO (12,3–14 km)', terr: 'flat', innsikt: 'Her rykket Augustson i andre runde i 2024: 19:45 mot Bloms 21:19, og 1:37 på 6 km.' },
+    { range: '15,9–17,9 km', d: 2.0, steder: 'Hurtigruteterminalen', terreng: 'Flatt langs havnen', drikke: 'Ingen', terr: 'flat', innsikt: 'Tregere enn flatene rundt vannet for alle seks halvmaratonvinnerne. Feltet sparer krefter – eller møter vind langs sjøen.' },
+    { range: '17,9 km–mål', d: 3.2, steder: 'Munkebekksmauet, Nordnes, Nordnesparken, mål', terreng: 'Brostein, kort stigning, nedover, flatt', drikke: 'Nordnes skole (18,4–19 km)', terr: 'blandet', innsikt: 'Avgjorde alle tre halvmaratonene for menn og to av tre for kvinner. På maraton mistet Tronstad mest her i 2025 – og Augustson selv i 2026.' }
+  ],
+  hills: {
+    m: [['Augustson 2024', '4:00', '3:19'], ['Augustson 2025', '3:48', '3:15'], ['Augustson 2026', '4:01', '3:21'], ['Galleberg 2024', '4:34', '4:00'], ['Nesje 2025', '4:40', '4:04'], ['Tjemsland 2026', '4:17', '3:38']],
+    hm: [['Sørli 2024', '3:23', '3:16'], ['Blummenfelt 2026', '3:23', '3:09'], ['Rilvaag 2024', '3:50', '3:33'], ['Vaksdal 2025', '3:58', '3:45'], ['Riise Carlsen 2026', '3:48', '3:30']]
+  },
+  splits: {
+    hm: [['Sørli 2024', 6], ['Sørli 2025', -11, 'fra 8,2 km'], ['Blummenfelt 2026', -9], ['Rilvaag 2024', -7], ['Vaksdal 2025', -1], ['Riise Carlsen 2026', -7]],
+    m: [['Augustson 2024', 76], ['Augustson 2025', 166], ['Augustson 2026', 168], ['Galleberg 2024', -14], ['Nesje 2025', 411], ['Tjemsland 2026', 81]]
+  },
+  rounds: [[2024, '35:10', '36:19', '38:00', '38:07'], [2025, '34:04', '35:03', '36:58', '38:45'], [2026, '36:36', '36:38', '39:03', '41:49']]
+};
+
+const TERR_FILL = { bakke: '#b3322a', blandet: '#f05a1a', flat: '#e2a63a', ned: '#f6d7a8' };
+const TERR_LABEL = { bakke: 'Bakke', blandet: 'Blandet', flat: 'Flatt', ned: 'Nedover' };
+const YEAR_COLOR = { 2024: '#12304a', 2025: '#f05a1a', 2026: '#8aa3b8' };
+const YEARS = [2024, 2025, 2026];
+const COURSE_AB = [[0, 4.6], [4.6, 8.2], [8.2, 10], [10, 15.9], [15.9, 17.9], [17.9, 21.1]];
+const DRINKS_KM = [3.35, 6.4, 9.65, 13.15, 18.7], CP_KM = [4.6, 8.2, 10, 15.9, 17.9];
+
+/* =====================================================================
+   4. TILSTAND
+   ===================================================================== */
+const state = {
+  dist: CONFIG.startDistance === 'Maraton' ? 'm' : 'hm', gender: 'menn', year: 2026,
+  overlay: false, seg: null, duelIdx: null, playing: false,
+  hillDist: 'm', flatPace: 270, hoverKm: null, splitDist: 'hm', course: 5, showData: !!CONFIG.showSourcesOpen
+};
+let timer = null;
+function setState(patch) { Object.assign(state, patch); render(); }
+function pick(key, v) {
+  clearInterval(timer);
+  const reset = ['dist', 'gender', 'year'].includes(key) ? { seg: null, duelIdx: null, playing: false } : {};
+  setState({ [key]: v, ...reset });
+}
+function onPlay() {
+  if (state.playing) { clearInterval(timer); setState({ playing: false }); return; }
+  const n = DATA.races[state.dist][state.gender][state.year].gap.length;
+  setState({ playing: true, duelIdx: 0 });
+  timer = setInterval(() => {
+    const i = (state.duelIdx ?? 0) + 1;
+    if (i >= n) { clearInterval(timer); setState({ playing: false, duelIdx: n - 1 }); }
+    else setState({ duelIdx: i });
+  }, 750);
+}
+
+/* =====================================================================
+   5. BEREGNING AV ALT SOM TEGNES
+   ===================================================================== */
+// Posisjonerer HTML-etiketter over en SVG i prosent av viewBox.
+const LB = (vx, vy, vw, vh, items) => items.map(o => ({
+  label: o.label, l: ((o.x - vx) / vw * 100).toFixed(2) + '%', t: ((o.y - vy) / vh * 100).toFixed(2) + '%',
+  tf: 'translate(' + (o.a === 'start' ? '0' : o.a === 'end' ? '-100%' : '-50%') + ',' + (o.v === 'bottom' ? '-100%' : '-50%') + ')',
+  fs: (o.fs || 12) + 'px', fw: o.fw || 400, c: o.c || '#8aa3b8'
+}));
+const opts = (list, cur, key) => list.map(([v, l]) => ({ label: l, key, v, on: v === cur }));
+
+function compute() {
+  const s = state, D = DATA, Gg = GEO;
+  const isM = s.dist === 'm';
+  const race = D.races[s.dist][s.gender][s.year];
+  const segs = isM ? D.mSeg : D.hmSeg;
+  const total = isM ? 42.2 : 21.1;
+
+  // --- Tempoprofil ---
+  const W = 800, L = 52, Rr = 12, T = 26, Bt = 260, iw = W - L - Rr, ih = Bt - T;
+  const X = k => L + k / total * iw;
+  const all = YEARS.flatMap(y => D.races[s.dist][s.gender][y].pace.filter(p => p != null).map(P));
+  const lo = Math.min(...all) - 12, hi = Math.max(...all) + 22;
+  const Y = p => T + (p - lo) / (hi - lo) * ih;
+  const step = (hi - lo) > 100 ? 30 : 15;
+  const ticks = [];
+  for (let t = Math.ceil(lo / step) * step; t < hi; t += step) ticks.push({ y: Y(t), label: F(t) });
+  const paces = race.pace.map(P);
+  let fastest = 0; paces.forEach((p, i) => { if (p != null && p < paces[fastest]) fastest = i; });
+  const segIdx = s.seg ?? fastest;
+  const bars = segs.map((g, i) => {
+    const p = paces[i], x = X(g.a) + 1.5, w = X(g.b) - X(g.a) - 3, sel = i === segIdx;
+    if (p == null) { const y = T + ih * 0.62; return { i, x, y, w, h: Bt - y, fill: sel ? '#d5dfe7' : '#e9eef0', stroke: sel ? '#12304a' : 'none', lx: x + w / 2, ly: y - 8, label: race.r2t[i - 6] }; }
+    const y = Y(p);
+    return { i, x, y, w, h: Bt - y, fill: TERR_FILL[g.terr], stroke: sel ? '#12304a' : 'none', lx: x + w / 2, ly: y - 8, label: race.pace[i] };
+  });
+  const lines = [];
+  if (s.overlay) YEARS.filter(y => y !== s.year).forEach(y => {
+    D.races[s.dist][s.gender][y].pace.forEach((pp, i) => { const p = P(pp); if (p != null) lines.push({ x1: X(segs[i].a) + 3, x2: X(segs[i].b) - 3, y: Y(p), stroke: YEAR_COLOR[y] }); });
+  });
+  const xkm = isM ? [[0, '0'], [3.2, '3,2'], [5.6, '5,6'], [10, '10'], [15.9, '15,9'], [17.9, '17,9'], [21.1, '21,1'], [25.7, '25,5'], [29.3, '29'], [31.1, '31'], [37, '37,3'], [40.1, '40,7'], [42.2, 'mål']]
+    : [[0, '0'], [4.6, '4,6'], [8.2, '8,2'], [10, '10'], [15.9, s.year === 2024 ? '15,8' : '15,9'], [17.9, s.year === 2024 ? '17,8' : '17,9'], [21.1, 'mål']];
+  const ea = []; for (let k = 0; k <= total + 0.001; k += 0.1) ea.push(X(Math.min(k, total)).toFixed(1) + ',' + (Bt - Gg.at(lap(Math.min(k, total)))[2] / 130 * ih * 0.42).toFixed(1));
+  const elevLine = ea.join(' '), elev = X(0) + ',' + Bt + ' ' + elevLine + ' ' + X(total) + ',' + Bt;
+  const pc = { elev, elevLine, ticks, bars, lines, xl: xkm.map(([k, l]) => ({ x: X(k), label: l })), isM, halfX: X(21.1) };
+
+  const g = segs[segIdx], p = paces[segIdx];
+  const avg = P(race.tid) / (isM ? 42.195 : 21.0975);
+  const d = p != null ? Math.round(p - avg) : null;
+  // Runde 2 starter på 21,1 km = 0 km på runden (rettet fra prototypen, som ga 0 høydemeter her).
+  const hy = hoyde(g.a >= 21.1 ? g.a - 21.1 : g.a, g.b > 21.1 ? g.b - 21.1 : g.b);
+  const segInfo = {
+    runde: isM ? (segIdx < 6 ? 'Runde 1 · ' : 'Runde 2 · ') + TERR_LABEL[g.terr] : TERR_LABEL[g.terr],
+    navn: g.navn, sted: g.sted,
+    valLabel: p != null ? 'Tempo' : 'Strekktid',
+    val: p != null ? race.pace[segIdx] + ' /km' : race.r2t[segIdx - 6],
+    diff: d == null ? 'Kun strekktid' : d === 0 ? 'Som snittet' : (d < 0 ? Math.abs(d) + ' s/km raskere' : d + ' s/km saktere'),
+    hoyde: hy.t, hoydeSub: hy.s,
+    note: (race.segNote && race.segNote[segIdx]) || (isM && segIdx >= 6 && p != null ? 'Tempo etter tolket målepunkt' : 'Snitt: ' + F(avg) + ' /km')
+  };
+
+  // --- Duellen ---
+  const pts = race.gap, DL = 52, DR = 20, DT = 28, DB = 204;
+  const DX = k => DL + k / total * (W - DL - DR);
+  const gv = pts.map(q => q[1]);
+  const gmax = Math.max(8, ...gv), gmin = Math.min(0, ...gv);
+  const pad = (gmax - gmin) * 0.12;
+  const ylo = gmin - (gmin < 0 ? pad : pad * 0.4), yhi = gmax + pad;
+  const DY = v => DT + (yhi - v) / (yhi - ylo) * (DB - DT);
+  const idx = s.duelIdx == null ? pts.length - 1 : Math.min(s.duelIdx, pts.length - 1);
+  const ps = pts.map(q => DX(q[0]).toFixed(1) + ',' + DY(q[1]).toFixed(1));
+  const dstep = [2, 5, 10, 15, 30, 60, 120, 300, 600].find(v => (yhi - ylo) / v <= 4) || 600;
+  const dticks = [];
+  for (let t = Math.ceil(ylo / dstep) * dstep; t <= yhi; t += dstep) dticks.push({ y: DY(t), label: t === 0 ? '0' : (t > 0 ? '+' : '−') + G(t), stroke: t === 0 ? '#8aa3b8' : '#d5dfe7' });
+  const placeName = k => {
+    if (k === 0) return 'Start';
+    if (isM) { const m = { 21.1: 'Halvveis', 25.7: 'BKK Fjellveien, runde 2', 29.3: 'Toppen av Fjellveien, runde 2', 31.1: 'Haraldsplass, runde 2', 37: 'Møhlenpris, runde 2', 40.1: 'Nordnes, runde 2', 42.2: 'Mål' }; return m[k] || km(k) + ' km'; }
+    return k === 21.1 ? 'Mål' : km(k) + ' km';
+  };
+  const cur = pts[idx], ax = DX(cur[0]);
+  const last = n => n.split(' ').slice(-1)[0];
+  const da = []; for (let k = 0; k <= total + 0.001; k += 0.1) da.push(DX(Math.min(k, total)).toFixed(1) + ',' + (DB - Gg.at(lap(Math.min(k, total)))[2] / 130 * (DB - DT) * 0.35).toFixed(1));
+  const dc = {
+    elev: DX(0) + ',' + DB + ' ' + da.join(' ') + ' ' + DX(total) + ',' + DB,
+    ticks: dticks, line: ps.join(' '), prog: ps.slice(0, idx + 1).join(' '),
+    area: DX(pts[0][0]).toFixed(1) + ',' + DY(0).toFixed(1) + ' ' + ps.join(' ') + ' ' + DX(pts[pts.length - 1][0]).toFixed(1) + ',' + DY(0).toFixed(1),
+    dots: pts.map((q, i) => ({ i, cx: DX(q[0]), cy: DY(q[1]), r: i === idx ? 8 : 4.5, fill: i <= idx ? '#f05a1a' : '#FFFFFF' })),
+    ax, aly: Math.max(16, DY(cur[1]) - 16), anchor: ax > 700 ? 'end' : ax < 100 ? 'start' : 'middle',
+    alabel: cur[1] === 0 ? '±0' : (cur[1] > 0 ? '+' : '−') + G(cur[1]),
+    xl: (isM ? [0, 10, 21.1, 31.1, 42.2] : [0, 5, 10, 15, 21.1]).map(k => ({ x: DX(k), label: k === 0 ? 'Start' : k === total ? 'Mål' : km(k) + ' km' })),
+    max: pts.length - 1, idx, place: placeName(cur[0]),
+    readout: cur[1] === 0 ? (cur[0] === 0 ? 'Start' : 'Side om side') : cur[1] > 0 ? last(race.navn) + ' leder med ' + G(cur[1]) : last(race.rival) + ' leder med ' + G(cur[1])
+  };
+  const dKm = cur[0], dLap = lap(dKm), r2 = isM && dKm > 21.1;
+  const dmap = { base: r2 ? '#e2a63a' : '#e9eef0', done: Gg.pts(0, dLap), x: Gg.at(dLap)[0], y: Gg.at(dLap)[1], label: (isM ? (dKm > 21.1 ? 'Runde 2 · ' : 'Runde 1 · ') : '') + placeName(dKm) };
+
+  // --- Løypa: kart og høydeprofil ---
+  const ch = hoyde(...COURSE_AB[s.course]);
+  const course = { ...D.course[s.course], hoyde: ch.t, hoydeSub: ch.s };
+  const st = Gg.at(0);
+  const mapV = {
+    vb: '-80 -60 1160 ' + (Gg.C.h + 120), all: Gg.all,
+    segs: COURSE_AB.map(([a, b], i) => ({ i, pts: Gg.pts(a, b), color: TERR_FILL[D.course[i].terr], sw: i === s.course ? 34 : 22, op: i === s.course ? 1 : 0.45 })),
+    drinks: DRINKS_KM.map(k => { const q = Gg.at(k); return { x: q[0], y: q[1] }; }),
+    cps: CP_KM.map(k => { const q = Gg.at(k); const left = q[0] > 640; return { x: q[0], y: q[1], tx: q[0] + (left ? -34 : 34), anchor: left ? 'end' : 'start', label: km(k) }; }),
+    sx: st[0], sy: st[1], stx: st[0] - 44, sty: st[1] + 14,
+    hasHover: s.hoverKm != null, hx: s.hoverKm != null ? Gg.at(s.hoverKm)[0] : 0, hy: s.hoverKm != null ? Gg.at(s.hoverKm)[1] : 0
+  };
+  const PL = 44, PW = 744, PT = 16, PB = 192, PX = k => PL + k / 21.1 * PW, PY = e => PB - e / 130 * (PB - PT);
+  const pline = k0 => { const a = []; for (let i = Gg.I(k0[0]); i <= Gg.I(k0[1]); i++) a.push(PX(i * Gg.C.step).toFixed(1) + ',' + PY(Gg.p[i][2]).toFixed(1)); return a; };
+  const hk = s.hoverKm;
+  const prof = {
+    ticks: [0, 50, 100].map(v => ({ y: PY(v), label: v + ' m' })),
+    areas: COURSE_AB.map(([a, b], i) => ({ pts: PX(a) + ',' + PB + ' ' + pline([a, b]).join(' ') + ' ' + PX(b) + ',' + PB, color: TERR_FILL[D.course[i].terr], op: i === s.course ? 1 : 0.35 })),
+    line: pline([0, 21.1]).join(' '),
+    cps: CP_KM.map(k => ({ x: PX(k) })),
+    drinks: DRINKS_KM.map(k => ({ x: PX(k), y: PY(Gg.at(k)[2]) - 10 })),
+    xl: [0, 4.6, 8.2, 10, 15.9, 17.9, 21.1].map(k => ({ x: PX(k), label: k === 0 ? 'Start' : k === 21.1 ? 'Mål' : km(k) })),
+    hasHover: hk != null, hx: hk != null ? PX(hk) : 0, hy: hk != null ? PY(Gg.at(hk)[2]) : 0,
+    anchor: hk != null && hk > 18 ? 'end' : hk != null && hk < 3 ? 'start' : 'middle',
+    hlabel: hk != null ? km(hk.toFixed(1)) + ' km · ' + Gg.at(hk)[2] + ' moh' : ''
+  };
+
+  // --- Bakkene ---
+  const hlo = 180, hhi = s.hillDist === 'm' ? 290 : 250;
+  const pct = v => ((v - hlo) / (hhi - hlo) * 100).toFixed(2) + '%';
+  const hills = D.hills[s.hillDist].map(([n, h, f]) => { const fh = P(h), ff = P(f); return { navn: n, hill: 'Bakke ' + h, flat: 'Flatt ' + f, add: '+' + (fh - ff) + ' s', fl: pct(ff), hl: pct(fh), w: ((fh - ff) / (hhi - hlo) * 100).toFixed(2) + '%' }; });
+  const hillTicks = (s.hillDist === 'm' ? [180, 210, 240, 270] : [180, 200, 220, 240]).map(t => ({ pct: pct(t), label: F(t) }));
+  const add = s.hillDist === 'm' ? [33, 41, 2.4] : [7, 18, 3.6];
+  const calc = { flat: F(s.flatPace), hill: F(s.flatPace + add[0]) + '–' + F(s.flatPace + add[1]) + ' /km', dist: km(add[2]) + ' km bakke', cost: '+' + G(add[0] * add[2]) + ' til +' + G(add[1] * add[2]) };
+
+  // --- Splittene ---
+  const sl = D.splits[s.splitDist], smax = Math.max(...sl.map(r => Math.abs(r[1])));
+  const splits = sl.map(([n, v, note]) => {
+    const w = Math.abs(v) / smax * 46;
+    const lab = (v > 0 ? '+' : '−') + (s.splitDist === 'hm' ? Math.abs(v) + ' s/km' : F(v)) + (note ? ' (' + note + ')' : '');
+    return { navn: n, color: v > 0 ? '#f05a1a' : '#12304a', left: (v > 0 ? 50 : 50 - w) + '%', w: Math.max(w, 0.8) + '%', label: lab, tl: (v > 0 ? 50 + w : 50 - w) + '%', tt: v > 0 ? 'translateX(8px)' : 'translateX(calc(-100% - 8px))' };
+  });
+
+  // --- Augustsons runder ---
+  const rmax = 170;
+  const rounds = D.rounds.map(([y, a1, a2, b1, b2]) => { const da = P(a2) - P(a1), db = P(b2) - P(b1); return { year: y, da: '+' + F(da), db: '+' + F(db), ha: (da / rmax * 82) + '%', hb: (db / rmax * 82) + '%', sub: y === 2024 ? 'Jevnt etter Haraldsplass' : y === 2025 ? 'Tapet kom på slutten' : 'Største fall' }; });
+
+  // --- Etiketter ---
+  const mvb = mapV.vb.split(' ').map(Number);
+  const labels = {
+    pc: LB(0, 0, 800, 300, [...pc.ticks.map(t => ({ x: 44, y: t.y, label: t.label, a: 'end' })), ...pc.bars.map(b => ({ x: b.lx, y: b.ly + 4, label: b.label, v: 'bottom', fw: 600, c: '#12304a' })), ...pc.xl.map(x => ({ x: x.x, y: 280, label: x.label }))]),
+    dc: LB(0, 0, 800, 240, [...dc.ticks.map(t => ({ x: 44, y: t.y, label: t.label, a: 'end' })), { x: dc.ax, y: dc.aly + 4, label: dc.alabel, a: dc.anchor, v: 'bottom', fs: 14, fw: 700, c: '#12304a' }, ...dc.xl.map(x => ({ x: x.x, y: 226, label: x.label }))]),
+    map: LB(mvb[0], mvb[1], mvb[2], mvb[3], mapV.cps.map(c => ({ x: c.tx, y: c.y, label: c.label, a: c.anchor, fs: 13, fw: 700, c: '#12304a' }))),
+    prof: LB(0, 0, 800, 224, [...prof.ticks.map(t => ({ x: 36, y: t.y, label: t.label, a: 'end' })), ...prof.xl.map(x => ({ x: x.x, y: 212, label: x.label })), ...(prof.hasHover ? [{ x: prof.hx, y: 10, label: prof.hlabel, a: prof.anchor, fw: 700, c: '#12304a' }] : [])])
+  };
+
+  return {
+    s, race, course, map: mapV, prof, dmap, labels, pc, segInfo, dc, rounds, hills, hillTicks, calc, splits,
+    distOpts: opts([['hm', 'Halvmaraton'], ['m', 'Maraton']], s.dist, 'dist'),
+    genderOpts: opts([['menn', 'Menn'], ['kvinner', 'Kvinner']], s.gender, 'gender'),
+    yearOpts: opts([[2024, '2024'], [2025, '2025'], [2026, '2026']], s.year, 'year'),
+    hillOpts: opts([['m', 'Maraton'], ['hm', 'Halvmaraton']], s.hillDist, 'hillDist'),
+    splitOpts: opts([['hm', 'Halvmaraton'], ['m', 'Maraton']], s.splitDist, 'splitDist'),
+    splitTone: race.splitType === 'Positiv' ? 'warning' : race.splitType === 'Negativ' ? 'brand' : 'neutral',
+    raceTitle: (isM ? 'Maraton ' : 'Halvmaraton ') + s.gender + ' ' + s.year,
+    overlayLegend: YEARS.filter(y => y !== s.year).map(y => ({ label: y + ': ' + D.races[s.dist][s.gender][y].navn, color: YEAR_COLOR[y] })),
+    hillSegLabel: s.hillDist === 'm' ? '3,2–5,6' : '4,6–8,2', hillLegend: s.hillDist === 'm' ? '(3,2–5,6 km)' : '(4,6–8,2 km)',
+    splitTitle: s.splitDist === 'hm' ? 'Fem av seks løp negativ eller jevn split' : 'Bare Galleberg løp negativ split',
+    splitSub: s.splitDist === 'hm' ? 'Forskjell i tempo mellom 0–10 km og 10 km–mål, sekunder per km.' : 'Andre halvdel minus første halvdel, total tid.'
+  };
+}
+
+/* =====================================================================
+   6. MALER (én funksjon per seksjon)
+   ===================================================================== */
+const segCtl = list => `<div class="seg">${map(list, o => `<button type="button" class="${o.on ? 'on' : ''}" data-act="pick" data-key="${o.key}" data-val="${o.v}" aria-pressed="${o.on}">${esc(o.label)}</button>`)}</div>`;
+const labels = list => map(list, t => `<span class="lb" style="left:${t.l};top:${t.t};transform:${t.tf};font-size:${t.fs};font-weight:${t.fw};color:${t.c}">${esc(t.label)}</span>`);
+const head = (eyebrow, title, lead, leadMax = 720) => `<div class="head"><span class="eyebrow">${eyebrow}</span><h2>${esc(title)}</h2>${lead ? `<p class="lead" style="max-width:${leadMax}px">${esc(lead)}</p>` : ''}</div>`;
+
+const NAV = [['#oppsummert', 'Oppsummert'], ['#loypa', 'Løypa'], ['#lopene', 'Løpene'], ['#duellen', 'Duellen'], ['#augustson', 'Augustson'], ['#bakkene', 'Bakkene'], ['#splitt', 'Splittene'], ['#monstre', 'Mønstre'], ['#data', 'Data']];
+
+function tHeader() {
+  return `
+<header id="oppsummert" class="hero">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+    <span style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#fff">Løpsanalyse · 02.11.2026</span>
+    <span style="font-size:14px;color:rgb(255 255 255 / 0.9)">UltimateLIVE mellomtider, 2024–2026</span>
+  </div>
+  <div class="col" style="gap:16px;max-width:820px">
+    <h1>Vinnerne av Bergen City Marathon: slik løp de</h1>
+    <p>Tolv seire, ni vinnere. På halvmaraton vinner den som har mest igjen etter Hurtigruteterminalen. På maraton vinner den som taper minst i andre runde.</p>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>12 / 9</b><span>seire / ulike vinnere</span></div>
+    <div class="kpi"><b>3 av 3</b><span>maratonseire til Tage Morken Augustson</span></div>
+    <div class="kpi"><b>5 · 9 · 8 s</b><span>vinnermarginer, halvmaraton menn</span></div>
+    <div class="kpi dark"><b>+33–41 s</b><span>per km i bakkene for alle maratonvinnere</span></div>
+  </div>
+</header>
+<nav class="nav" aria-label="Seksjoner">${map(NAV, ([h, l]) => `<a href="${h}">${l}</a>`)}</nav>
+<section class="insights">
+  <div class="card insight"><i class="bx bx-flag ico"></i><h3>Halvmaraton avgjøres på slutten</h3><p>Alle herreløpene ble avgjort på de siste 3,2 km etter at to løpere gikk side om side til Hurtigruteterminalen. Fem av seks vinnere løp negativ eller jevn split.</p></div>
+  <div class="card insight"><i class="bx bx-trending-down ico"></i><h3>Maraton vinnes midt i andre runde</h3><p>Augustson løp positiv split alle tre årene. Han vant ved å øke farten på flatene rundt Store Lungegårdsvann og over Nordnes mens konkurrentene sprakk.</p></div>
+  <div class="card insight"><i class="bx bx-landscape ico"></i><h3>Bakkene koster likt for alle</h3><p>Sandviken-bakken og Mon Plaisir ble løpt 33–41 s/km saktere enn flatene, uansett nivå. Ingen vinner vant løpet i en motbakke.</p></div>
+</section>`;
+}
+
+function tCourse(v) {
+  const m = v.map, pr = v.prof, c = v.course;
+  return `
+<section id="loypa" class="section">
+  ${head('Løypa', 'Seks strekk mellom målepunktene', 'Tegnet fra den offisielle GPX-filen. Én runde er 21,1 km med rundt 255 høydemeter, og maraton løper den to ganger. Velg et strekk på kartet eller i høydeprofilen.')}
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch">
+    <div class="card" style="flex:1 1 260px;max-width:420px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div class="rel">
+        <svg viewBox="${m.vb}" style="width:100%;height:auto;max-height:640px" role="img" aria-label="Løypekart">
+          <polyline points="${m.all}" fill="none" stroke="#e9eef0" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"></polyline>
+          ${map(m.segs, g => `<polyline data-act="course" data-i="${g.i}" points="${g.pts}" fill="none" stroke="${g.color}" stroke-width="${g.sw}" stroke-opacity="${g.op}" stroke-linejoin="round" stroke-linecap="round" style="cursor:pointer;transition:stroke-width 200ms ease-out,stroke-opacity 200ms ease-out"></polyline>`)}
+          ${map(m.drinks, w => `<circle cx="${w.x}" cy="${w.y}" r="15" fill="#12304a" stroke="#FFFFFF" stroke-width="6"></circle>`)}
+          ${map(m.cps, q => `<circle cx="${q.x}" cy="${q.y}" r="18" fill="#FFFFFF" stroke="#12304a" stroke-width="7"></circle>`)}
+          <circle cx="${m.sx}" cy="${m.sy}" r="28" fill="#f05a1a" stroke="#12304a" stroke-width="8"></circle>
+          <text x="${m.stx}" y="${m.sty}" font-size="40" font-weight="700" fill="#12304a" text-anchor="end" paint-order="stroke" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round">Start / mål</text>
+          ${m.hasHover ? `<circle cx="${m.hx}" cy="${m.hy}" r="26" fill="#12304a" stroke="#e2a63a" stroke-width="10" style="pointer-events:none"></circle>` : ''}
+        </svg>
+        ${labels(v.labels.map)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#2f5573">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:50%;background:#FFFFFF;border:2px solid #12304a"></span>Målepunkt (km)</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#12304a"></span>Drikkestasjon</span>
+      </div>
+    </div>
+    <div class="card" style="flex:2 1 420px;min-width:0;padding:24px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:baseline">
+        <h3>Høydeprofil, én runde</h3>
+        <span class="sub">Høyeste punkt 124 moh ved Fjellveien</span>
+      </div>
+      <div class="rel">
+        <svg data-prof viewBox="0 0 800 224" style="width:100%;height:auto;overflow:visible;cursor:crosshair" role="img" aria-label="Høydeprofil">
+          ${map(pr.ticks, t => `<line x1="44" x2="788" y1="${t.y}" y2="${t.y}" stroke="#d5dfe7" stroke-width="1"></line>`)}
+          ${map(pr.areas, a => `<polygon points="${a.pts}" fill="${a.color}" fill-opacity="${a.op}" style="transition:fill-opacity 200ms ease-out"></polygon>`)}
+          <polyline points="${pr.line}" fill="none" stroke="#12304a" stroke-width="2" stroke-linejoin="round"></polyline>
+          ${map(pr.cps, q => `<line x1="${q.x}" x2="${q.x}" y1="16" y2="192" stroke="#12304a" stroke-width="1" stroke-dasharray="3 4" stroke-opacity="0.4"></line>`)}
+          ${map(pr.drinks, w => `<circle cx="${w.x}" cy="${w.y}" r="4.5" fill="#12304a" stroke="#FFFFFF" stroke-width="2"></circle>`)}
+          ${pr.hasHover ? `<line x1="${pr.hx}" x2="${pr.hx}" y1="16" y2="192" stroke="#12304a" stroke-width="1.5" style="pointer-events:none"></line><circle cx="${pr.hx}" cy="${pr.hy}" r="5" fill="#12304a" stroke="#e2a63a" stroke-width="2" style="pointer-events:none"></circle>` : ''}
+        </svg>
+        ${labels(v.labels.prof)}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;border-top:1px solid #d5dfe7;padding-top:20px">
+        <div class="col" style="gap:4px">
+          <span class="lbl">Strekk</span>
+          <span style="font-size:24px;font-weight:600;line-height:32px">${esc(c.range)}</span>
+          <span style="font-size:15px;color:#2f5573">${esc(c.steder)}</span>
+        </div>
+        <div class="col" style="gap:12px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><i class="bx bx-trending-up ico" style="font-size:20px"></i><span style="font-size:15px;line-height:22px"><strong>${esc(c.hoyde)}</strong> · ${esc(c.hoydeSub)}</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><i class="bx bx-landscape ico" style="font-size:20px"></i><span style="font-size:15px;line-height:22px">${esc(c.terreng)}</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><i class="bx bx-droplet ico" style="font-size:20px"></i><span style="font-size:15px;line-height:22px">${esc(c.drikke)}</span></div>
+        </div>
+      </div>
+      <div style="background:#fde8dc;border-radius:8px;padding:16px;font-size:15px;line-height:23px;color:#12304a">${esc(c.innsikt)}</div>
+    </div>
+  </div>
+</section>`;
+}
+
+function tRaces(v) {
+  const r = v.race, pc = v.pc, si = v.segInfo, dc = v.dc, dm = v.dmap, s = v.s;
+  const stat = (flex, label, value, extra = '') => `<div class="card" style="flex:${flex};padding:16px 20px;display:flex;flex-direction:column;gap:4px"><span class="lbl">${label}</span><span style="font-size:22px;font-weight:600;line-height:30px${extra}">${esc(value)}</span></div>`;
+  return `
+<section id="lopene" class="section">
+  ${head('Løpsutforsker', 'Tolv seire, strekk for strekk')}
+  <div style="display:flex;flex-wrap:wrap;gap:12px">${segCtl(v.distOpts)}${segCtl(v.genderOpts)}${segCtl(v.yearOpts)}</div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px">
+    ${stat('2 1 260px', 'Vinner', r.navn)}
+    ${stat('1 1 150px', 'Sluttid', r.tid)}
+    ${stat('1 1 150px', 'Margin', r.margin, ';color:#d03808')}
+    <div class="card" style="flex:1 1 150px;padding:16px 20px;display:flex;flex-direction:column;gap:6px">
+      <span class="lbl">Split</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span style="font-size:18px;font-weight:600">${esc(r.splitShort)}</span>
+        <span class="badge ${v.splitTone}">${esc(r.splitType)}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center">
+      <div class="col" style="gap:2px">
+        <h3>Tempoprofil</h3>
+        <span class="sub">Snittfart per strekk, min/km. Høyere søyle er raskere. Linjen er høydeprofilen fra GPX.</span>
+      </div>
+      <button type="button" class="toggle" data-act="overlay" role="switch" aria-checked="${s.overlay}">
+        <span class="track" style="background:${s.overlay ? '#f05a1a' : '#c5d0da'}"><span class="knob" style="left:${s.overlay ? '20px' : '2px'}"></span></span>
+        Sammenlign med de andre årene
+      </button>
+    </div>
+    <div class="rel">
+      <svg viewBox="0 0 800 300" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Tempoprofil">
+        ${map(pc.ticks, t => `<line x1="52" x2="788" y1="${t.y}" y2="${t.y}" stroke="#d5dfe7" stroke-width="1"></line>`)}
+        ${map(pc.bars, b => `<rect data-act="seg" data-i="${b.i}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="4" fill="${b.fill}" stroke="${b.stroke}" stroke-width="2" style="cursor:pointer;transition:y 250ms ease-out,height 250ms ease-out"></rect>`)}
+        <polygon points="${pc.elev}" fill="#12304a" fill-opacity="0.08" style="pointer-events:none"></polygon>
+        <polyline points="${pc.elevLine}" fill="none" stroke="#12304a" stroke-opacity="0.5" stroke-width="1.5" stroke-linejoin="round" style="pointer-events:none"></polyline>
+        ${map(pc.lines, l => `<line x1="${l.x1}" x2="${l.x2}" y1="${l.y}" y2="${l.y}" stroke="${l.stroke}" stroke-width="3" stroke-linecap="round" style="pointer-events:none"></line>`)}
+        <line x1="52" x2="788" y1="260" y2="260" stroke="#c5d0da" stroke-width="1"></line>
+        ${pc.isM ? `<text x="${pc.halfX}" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#d03808">Halvveis</text>` : ''}
+      </svg>
+      ${labels(v.labels.pc)}
+    </div>
+    ${s.overlay ? `<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:#2f5573">${map(v.overlayLegend, g => `<span style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:3px;border-radius:2px;background:${g.color}"></span>${esc(g.label)}</span>`)}</div>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;background:#fde8dc;border:1px solid #e2a63a;border-radius:8px;padding:16px">
+      <div class="col" style="gap:2px">
+        <span style="font-size:13px;color:#d03808;font-weight:600">${esc(si.runde)}</span>
+        <span style="font-size:17px;font-weight:600">${esc(si.navn)}</span>
+        <span style="font-size:14px;color:#2f5573">${esc(si.sted)}</span>
+      </div>
+      <div class="col" style="gap:2px">
+        <span class="lbl">${esc(si.valLabel)}</span>
+        <span style="font-size:26px;font-weight:600;line-height:32px">${esc(si.val)}</span>
+      </div>
+      <div class="col" style="gap:2px">
+        <span class="lbl">Mot snittet i løpet</span>
+        <span style="font-size:17px;font-weight:600">${esc(si.diff)}</span>
+        <span class="lbl">${esc(si.note)}</span>
+      </div>
+      <div class="col" style="gap:2px">
+        <span class="lbl">Høydemeter (GPX)</span>
+        <span style="font-size:17px;font-weight:600">${esc(si.hoyde)}</span>
+        <span class="lbl">${esc(si.hoydeSub)}</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="duellen" class="col" style="gap:16px">
+    <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center">
+        <div class="col" style="gap:2px">
+          <h3>Duellen mot ${esc(r.rival)}</h3>
+          <span class="sub">Vinnerens ledelse ved hvert målepunkt. Under null betyr at konkurrenten ledet.</span>
+        </div>
+        <button type="button" class="btn" data-act="play"><i class="bx bx-${s.playing ? 'pause' : 'play'}"></i>${s.playing ? 'Pause' : 'Spill av'}</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+        <div style="flex:3 1 420px;min-width:0">
+          <div class="rel">
+            <svg viewBox="0 0 800 240" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Ledelse underveis">
+              <polygon points="${dc.elev}" fill="#e9eef0"></polygon>
+              ${map(dc.ticks, t => `<line x1="52" x2="780" y1="${t.y}" y2="${t.y}" stroke="${t.stroke}" stroke-width="1"></line>`)}
+              <polygon points="${dc.area}" fill="#f05a1a" fill-opacity="0.14"></polygon>
+              <polyline points="${dc.line}" fill="none" stroke="#e2a63a" stroke-width="2" stroke-dasharray="5 5"></polyline>
+              <polyline points="${dc.prog}" fill="none" stroke="#f05a1a" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+              <line x1="${dc.ax}" x2="${dc.ax}" y1="28" y2="204" stroke="#12304a" stroke-width="1" stroke-dasharray="3 4"></line>
+              ${map(dc.dots, d => `<circle data-act="duel" data-i="${d.i}" cx="${d.cx}" cy="${d.cy}" r="${d.r}" fill="${d.fill}" stroke="#d03808" stroke-width="2" style="cursor:pointer;transition:r 150ms ease-out"></circle>`)}
+            </svg>
+            ${labels(v.labels.dc)}
+          </div>
+        </div>
+        <div style="flex:1 1 150px;max-width:200px;margin:0 auto;display:flex;flex-direction:column;gap:8px;align-items:center">
+          <svg viewBox="${v.map.vb}" style="width:100%;height:auto" role="img" aria-label="Posisjon i løypa">
+            <polyline points="${v.map.all}" fill="none" stroke="${dm.base}" stroke-width="40" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="${dm.done}" fill="none" stroke="#f05a1a" stroke-width="40" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <circle cx="${dm.x}" cy="${dm.y}" r="44" fill="#12304a" stroke="#FFFFFF" stroke-width="12" style="transition:cx 300ms ease-out,cy 300ms ease-out"></circle>
+          </svg>
+          <span style="font-size:12px;color:#8aa3b8;text-align:center">${esc(dm.label)}</span>
+        </div>
+      </div>
+      <div class="col" style="gap:8px">
+        <input type="range" min="0" max="${dc.max}" step="1" value="${dc.idx}" data-act="duelRange" aria-label="Målepunkt">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline">
+          <span style="font-size:15px;color:#2f5573">${esc(dc.place)}</span>
+          <span style="font-size:20px;font-weight:600">${esc(dc.readout)}</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:#12304a;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <span class="eyebrow" style="color:#e2a63a">${esc(v.raceTitle)}</span>
+      <p style="font-size:17px;line-height:27px;color:#FFFFFF;text-wrap:pretty;max-width:860px">${esc(r.text)}</p>
+      ${r.note ? `<span style="font-size:13px;line-height:20px;color:#c5d0da">${esc(r.note)}</span>` : ''}
+    </div>
+  </div>
+</section>`;
+}
+
+function tAugustson(v) {
+  const bar = (val, h, color) => `<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;width:min(64px,40%)"><span style="font-size:13px;font-weight:600">${val}</span><div style="width:100%;height:${h};min-height:3px;background:${color};border-radius:6px 6px 0 0;transition:height 300ms ease-out"></div></div>`;
+  return `
+<section id="augustson" class="section">
+  ${head('Augustsons mønster', 'Tapet i andre runde kommer etter Haraldsplass', 'Hvor mye tregere runde to var enn runde én, delt i to like strekk. Han har aldri løpt negativ split i Bergen.')}
+  <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:end;height:240px;border-bottom:1px solid #c5d0da">
+      ${map(v.rounds, r => `<div style="display:flex;gap:8px;justify-content:center;align-items:flex-end;height:100%">${bar(r.da, r.ha, '#e2a63a')}${bar(r.db, r.hb, '#d03808')}</div>`)}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:-8px">
+      ${map(v.rounds, r => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center"><span style="font-size:16px;font-weight:600">${r.year}</span><span class="lbl">${r.sub}</span></div>`)}
+    </div>
+    <div class="legend">
+      <span><span style="width:12px;height:12px;border-radius:3px;background:#e2a63a"></span>Start/Bryggen → Haraldsplass</span>
+      <span><span style="width:12px;height:12px;border-radius:3px;background:#d03808"></span>Haraldsplass → mål</span>
+    </div>
+  </div>
+</section>`;
+}
+
+function tHills(v) {
+  const grid = 'display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr) 56px;gap:12px';
+  return `
+<section id="bakkene" class="section">
+  <div class="head-row">
+    ${head('Bakkene', 'Samme tillegg, uansett nivå', 'Tempo i bakkestrekket mot tempo på flatene rundt vannet (10–15,9 km), første runde.', 640)}
+    ${segCtl(v.hillOpts)}
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:16px">
+    <div class="card" style="flex:2 1 460px;padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="legend">
+        <span><span style="width:12px;height:12px;border-radius:50%;background:#12304a"></span>Flatt</span>
+        <span><span style="width:12px;height:12px;border-radius:50%;background:#f05a1a"></span>Bakke ${v.hillLegend}</span>
+      </div>
+      ${map(v.hills, h => `
+      <div style="${grid};align-items:center">
+        <span style="font-size:14px;font-weight:500;line-height:18px">${esc(h.navn)}</span>
+        <div style="position:relative;height:28px">
+          <div style="position:absolute;left:0;right:0;top:13px;height:2px;background:#e9eef0"></div>
+          <div style="position:absolute;top:11px;height:6px;border-radius:3px;background:#e2a63a;left:${h.fl};width:${h.w};transition:all 300ms ease-out"></div>
+          <div title="${h.flat}" style="position:absolute;top:6px;width:16px;height:16px;border-radius:50%;background:#12304a;transform:translateX(-50%);left:${h.fl};transition:left 300ms ease-out"></div>
+          <div title="${h.hill}" style="position:absolute;top:6px;width:16px;height:16px;border-radius:50%;background:#f05a1a;transform:translateX(-50%);left:${h.hl};transition:left 300ms ease-out"></div>
+        </div>
+        <span style="font-size:15px;font-weight:700;color:#d03808;text-align:right">${h.add}</span>
+      </div>`)}
+      <div style="${grid}">
+        <span></span>
+        <div style="position:relative;height:18px">${map(v.hillTicks, t => `<span style="position:absolute;transform:translateX(-50%);font-size:12px;color:#8aa3b8;left:${t.pct}">${t.label}</span>`)}</div>
+        <span></span>
+      </div>
+    </div>
+    <div class="card" style="flex:1 1 280px;padding:24px;display:flex;flex-direction:column;gap:16px;border-top:4px solid #f05a1a">
+      <div class="col" style="gap:4px">
+        <h3>Hva betyr det for ditt tempo?</h3>
+        <span style="font-size:14px;line-height:20px;color:#2f5573">Basert på vinnernes tillegg i ${v.hillSegLabel} km.</span>
+      </div>
+      <div class="col" style="gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:14px;font-weight:500;color:#2f5573">Ditt tempo på flatt</span>
+          <span style="font-size:28px;font-weight:700;color:#12304a">${v.calc.flat}</span>
+        </div>
+        <input type="range" min="180" max="420" step="5" value="${v.s.flatPace}" data-act="flatRange" aria-label="Tempo på flatt" style="accent-color:#f05a1a">
+      </div>
+      <div style="background:#f6f1ee;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="col" style="gap:2px">
+          <span class="lbl">Forventet tempo i bakkestrekket</span>
+          <span style="font-size:26px;font-weight:600;line-height:32px;color:#12304a">${v.calc.hill}</span>
+        </div>
+        <div class="col" style="gap:2px">
+          <span class="lbl">Ekstra tid på ${v.calc.dist}</span>
+          <span style="font-size:20px;font-weight:600;color:#d03808">${v.calc.cost}</span>
+        </div>
+      </div>
+      <span style="font-size:13px;line-height:19px;color:#2f5573">Ingen vinner presset i motbakkene. Gapene oppsto på flatene og på avslutningen.</span>
+    </div>
+  </div>
+</section>`;
+}
+
+function tSplits(v) {
+  const grid = 'display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:12px';
+  return `
+<section id="splitt" class="section">
+  <div class="head-row">
+    ${head('Splittene', v.splitTitle, v.splitSub, 640)}
+    ${segCtl(v.splitOpts)}
+  </div>
+  <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px">
+    <div style="${grid};font-size:12px;color:#8aa3b8">
+      <span></span>
+      <div style="display:flex;justify-content:space-between"><span>Raskere andre halvdel</span><span>Tregere andre halvdel</span></div>
+    </div>
+    ${map(v.splits, x => `
+    <div style="${grid};align-items:center">
+      <span style="font-size:14px;font-weight:500;line-height:18px">${esc(x.navn)}</span>
+      <div style="position:relative;height:32px">
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#c5d0da"></div>
+        <div style="position:absolute;top:6px;height:20px;border-radius:4px;background:${x.color};left:${x.left};width:${x.w};transition:all 300ms ease-out"></div>
+        <span style="position:absolute;top:7px;font-size:13px;font-weight:700;color:#12304a;white-space:nowrap;left:${x.tl};transform:${x.tt}">${esc(x.label)}</span>
+      </div>
+    </div>`)}
+  </div>
+</section>`;
+}
+
+function tPatterns() {
+  const card = (big, title, text) => `<div class="card" style="border-top:4px solid #f05a1a;padding:24px;display:flex;flex-direction:column;gap:10px"><span style="font-size:44px;font-weight:600;line-height:1;letter-spacing:-.02em;color:#d03808">${big}</span><h3 style="font-size:17px;line-height:normal">${title}</h3><p style="font-size:15px;line-height:23px;color:#2f5573">${text}</p></div>`;
+  return `
+<section id="monstre" class="section">
+  ${head('Mønstre', 'På tvers av år og distanser')}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+    ${card('4 av 6', 'halvmaratonvinnere lå likt eller bak ved 17,9 km', 'Havnestrekket var tregere enn flatene rundt vannet for alle seks. Feltet sparer krefter før avslutningen, eller møter vind langs sjøen.')}
+    ${card('31–40 km', 'der maratonløpene ble avgjort', 'Enten holdt vinneren farten mens konkurrenten sprakk, eller ledelsen var så stor at fallet ikke spilte noen rolle.')}
+    ${card('10–15 s', 'saktere per km de første 3,2 km', 'Nesten alle vinnerne åpnet forsiktig før Sandviken-bakken. Unntaket er Sørli i 2024.')}
+  </div>
+  <div style="background:#fde8dc;border:1px solid #e2a63a;border-radius:12px;padding:24px;display:flex;gap:16px;align-items:flex-start">
+    <i class="bx bx-droplet ico" style="font-size:28px;flex:none"></i>
+    <div class="col" style="gap:6px">
+      <h3 style="font-size:17px;line-height:normal">Drikkestasjonene</h3>
+      <p style="font-size:15px;line-height:23px;color:#2f5573;text-wrap:pretty">Tidtakingen registrerer ikke hvem som tar drikke, og strekkene er for lange til at et kort stopp synes. Stasjonene ved Tippetue, Haraldsplass og AdO ligger på strekk som ble løpt i jevnt, høyt tempo, så ingen vinner gjorde stopp av betydning. Svaret må komme fra løpsvideo, bilder eller vinnerne selv.</p>
+    </div>
+  </div>
+</section>`;
+}
+
+function tData(v) {
+  const open = v.s.showData;
+  return `
+<section id="data" class="card" style="overflow:hidden">
+  <button type="button" class="data-btn" data-act="data" aria-expanded="${open}">
+    <span style="display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600"><i class="bx bx-info-circle ico" style="font-size:22px"></i>Datagrunnlag og kilder</span>
+    <i class="bx ${open ? 'bx-chevron-up' : 'bx-chevron-down'}" style="font-size:24px"></i>
+  </button>
+  ${open ? `
+  <div style="padding:0 24px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;font-size:14px;line-height:22px;color:#2f5573">
+    <div class="col" style="gap:10px">
+      <p>Alle tider er hentet fra UltimateLIVE (Ultimate Sport Service). Det finnes ingen ekte kilometertider. Halvmaraton har seks målepunkter, maraton tolv, og analysen bruker snittfart per strekk.</p>
+      <p>Løypekart og høydeprofil er tegnet fra den offisielle GPX-filen (BCM 2025), skalert til 21,1 km. Høydemeter er glattet og avrundet.</p>
+      <p>I 2024 sto to målepunkter ved 15,8 og 17,8 km. Sørli mangler passering ved 10 km i 2025, og Ane Brekke mangler 15,8 km i 2024.</p>
+      <p>Målepunktene i andre maratonrunde (merket 25,5, 29, 31, 37,3 og 40,7 km) er tolket som de samme stedene som i første runde: BKK Fjellveien, toppen av Fjellveien, Haraldsplass, Møhlenpris og Nordnes. Tidene og avstandene mellom løperne er eksakte uansett tolkning.</p>
+    </div>
+    <div class="col" style="gap:8px">
+      <span style="font-weight:600;color:#12304a">Kilder</span>
+      <span>UltimateLIVE – Bergen City Marathon 2026, 2025 og 2024 (resultater og mellomtider)</span>
+      <span>Sportsidioten – Resultater Bergen City Marathon 2026, 2025 og 2024</span>
+      <span style="margin-top:8px;color:#8aa3b8">Analyse: Ed Bro, 02.11.2026</span>
+    </div>
+  </div>` : ''}
+</section>`;
+}
+
+function template(v) {
+  return `<div class="wrap">${tHeader()}${tCourse(v)}${tRaces(v)}${tAugustson(v)}${tHills(v)}${tSplits(v)}${tPatterns()}${tData(v)}</div>`;
+}
+
+/* =====================================================================
+   7. RENDERING
+   Minimal DOM-patching: oppdaterer eksisterende noder i stedet for å
+   bytte dem ut, slik at CSS-overganger og skyveknapper fungerer.
+   ===================================================================== */
+function morph(from, to) {
+  if (from.nodeType !== to.nodeType || from.nodeName !== to.nodeName) { from.replaceWith(to); return; }
+  if (from.nodeType === 3 || from.nodeType === 8) { if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue; return; }
+  for (const a of Array.from(from.attributes)) if (!to.hasAttribute(a.name)) from.removeAttribute(a.name);
+  for (const a of Array.from(to.attributes)) if (from.getAttribute(a.name) !== a.value) from.setAttribute(a.name, a.value);
+  if (from.nodeName === 'INPUT' && from.value !== to.getAttribute('value')) from.value = to.getAttribute('value');
+  const fc = Array.from(from.childNodes), tc = Array.from(to.childNodes);
+  tc.forEach((t, i) => { if (fc[i]) morph(fc[i], t); else from.appendChild(t); });
+  for (let i = tc.length; i < fc.length; i++) fc[i].remove();
+}
+const root = document.getElementById('bcm');
+const tpl = document.createElement('template');
+function render() {
+  tpl.innerHTML = template(compute());
+  const next = tpl.content.firstElementChild;
+  if (root.firstElementChild) morph(root.firstElementChild, next); else root.appendChild(next);
+}
+
+/* =====================================================================
+   8. HENDELSER (delegert fra rotelementet)
+   ===================================================================== */
+const kmFromEvent = (e, svg) => { const r = svg.getBoundingClientRect(); const vx = (e.clientX - r.left) / r.width * 800; return Math.max(0, Math.min(21.1, (vx - 44) / 744 * 21.1)); };
+
+root.addEventListener('click', e => {
+  const prof = e.target.closest('[data-prof]');
+  if (prof) { const k = kmFromEvent(e, prof); const i = COURSE_AB.findIndex(([a, b]) => k >= a && k <= b); if (i >= 0) setState({ course: i }); return; }
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const i = +el.dataset.i;
+  switch (el.dataset.act) {
+    case 'pick': { const raw = el.dataset.val; pick(el.dataset.key, isNaN(+raw) ? raw : +raw); break; }
+    case 'course': setState({ course: i }); break;
+    case 'seg': setState({ seg: i }); break;
+    case 'duel': clearInterval(timer); setState({ duelIdx: i, playing: false }); break;
+    case 'play': onPlay(); break;
+    case 'overlay': setState({ overlay: !state.overlay }); break;
+    case 'data': setState({ showData: !state.showData }); break;
+  }
+});
+root.addEventListener('mouseover', e => {
+  const bar = e.target.closest('[data-act="seg"]');
+  if (bar && +bar.dataset.i !== state.seg) setState({ seg: +bar.dataset.i });
+});
+root.addEventListener('mousemove', e => {
+  const prof = e.target.closest('[data-prof]');
+  if (prof) setState({ hoverKm: kmFromEvent(e, prof) });
+});
+root.addEventListener('mouseout', e => {
+  const prof = e.target.closest('[data-prof]');
+  if (prof && !prof.contains(e.relatedTarget) && state.hoverKm != null) setState({ hoverKm: null });
+});
+root.addEventListener('input', e => {
+  const act = e.target.dataset.act;
+  if (act === 'duelRange') { clearInterval(timer); setState({ duelIdx: +e.target.value, playing: false }); }
+  else if (act === 'flatRange') setState({ flatPace: +e.target.value });
+});
+
+render();
+if (CONFIG.autoplayDuel) setTimeout(onPlay, 600);
+</script>
+</body>
+</html>

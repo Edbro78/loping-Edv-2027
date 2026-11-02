@@ -11,7 +11,7 @@ import { useCourse } from '../state/course';
 import { usePlan } from '../state/plan';
 import type { UiCopy } from '../i18n/ui';
 import { useUi } from '../i18n/useUi';
-import { splitMarks, terrOf } from './Splits';
+import { splitMarks, terrOf } from '../lib/marks';
 
 const ATTR = 'Kart © Esri, HERE, Garmin, Intermap, © OpenStreetMap-bidragsytere';
 const TERR_ICON: Record<TerrKey, typeof ArrowUp> = {

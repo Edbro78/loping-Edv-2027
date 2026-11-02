@@ -3,8 +3,6 @@ import { Printer, Droplet } from 'lucide-react';
 import {
   BAND_FULL,
   BAND_HALF,
-  CP,
-  FULL_EXTRA_STATION,
   LAP,
   REF_COLS_FULL,
   REF_COLS_HALF,
@@ -23,49 +21,8 @@ import { StepContinue } from './StepContinue';
 import type { UiCopy } from '../i18n/ui';
 import { useUi } from '../i18n/useUi';
 import { usePreviewLocale } from '../state/previewLocale';
-import { scrollToView, usePlan } from '../state/plan';
-
-type Mark = { km: number; name: string };
-
-export function splitMarks(full: boolean, marks: UiCopy['marks']): Mark[] {
-  const rows: Mark[] = [{ km: 0, name: marks.start }];
-  if (!full) {
-    for (const [km, name] of CP) rows.push({ km, name });
-  } else {
-    for (const [km, name] of CP) {
-      rows.push({ km, name: Math.abs(km - LAP) < 0.02 ? marks.halfwayCutoff : name });
-    }
-    rows.push({ km: FULL_EXTRA_STATION, name: marks.drinkBryggen });
-    for (const [km, name] of CP) {
-      rows.push({ km: km + LAP, name: Math.abs(km - LAP) < 0.02 ? marks.finish : name });
-    }
-    for (const k of [25, 30, 35, 40]) rows.push({ km: k, name: marks.km.replace('{n}', String(k)) });
-  }
-  rows.sort((a, b) => a.km - b.km);
-  const out: Mark[] = [];
-  for (const r of rows) {
-    const prev = out[out.length - 1];
-    if (prev && Math.abs(prev.km - r.km) <= 0.02) {
-      if (r.name === marks.halfwayCutoff || r.name === marks.finish || r.name === marks.drinkBryggen) {
-        prev.name = r.name;
-      }
-      continue;
-    }
-    out.push({ ...r });
-  }
-  return out;
-}
-
-export function terrOf(a: number, b: number, g: number): TerrKey {
-  const mid = (a + b) / 2;
-  const lk = ((mid % LAP) + LAP) % LAP;
-  const atJoin = Math.abs(lk) < 1e-4 || Math.abs(lk - LAP) < 1e-3;
-  const lapKm = atJoin ? (mid > LAP / 2 ? LAP : 0) : lk;
-  if (lapKm >= 17.79 && lapKm <= 18.41) return 'cobble';
-  if (g >= 2) return 'climb';
-  if (g <= -2) return 'down';
-  return 'flat';
-}
+import { splitMarks, terrOf } from '../lib/marks';
+import { guideAttention, scrollToView, usePlan } from '../state/plan';
 
 export function Splits() {
   const { state, patch } = usePlan();
@@ -88,6 +45,13 @@ export function Splits() {
         <span><i className="swatch elev" /> {m.splits.legendElev}</span>
       </div>
       <PaceChartCard plan={plan} points={course.points} />
+      <StepContinue
+        id="splits-step-continue"
+        step={4}
+        phrase={m.stepContinue.goTo.replace('{n}', '4')}
+        attention={guideAttention(state) === 4}
+        onClick={goToMilepaeler}
+      />
       <div className="subtabs" role="tablist" aria-label={m.splits.tablist}>
         {(
           [
@@ -103,7 +67,6 @@ export function Splits() {
       {state.tab === 'seg' && <Segments plan={plan} marks={m.marks} terrain={m.terrain} copy={m.splits} />}
       {state.tab === 'km' && <PerKm plan={plan} copy={m.splits} />}
       <Reference plan={plan} points={course.points} copy={m.splits} marks={m.marks} />
-      <StepContinue id="splits-step-continue" step={4} onClick={goToMilepaeler} />
     </section>
   );
 }

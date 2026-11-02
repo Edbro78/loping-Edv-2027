@@ -74,6 +74,13 @@ export const ROUTES: RouteMeta[] = [
     schema: 'article',
   },
   {
+    path: '/slik-lop-de-beste',
+    title: 'Slik løp de beste – Bergen City Marathon',
+    description:
+      'Tolv seire og ni vinnere fra 2024 til 2026: tempo, dueller og hvor løpene ble avgjort.',
+    schema: 'article',
+  },
+  {
     path: '/kontakt',
     title: 'Kontakt',
     description: 'Send spørsmål om løypa, tempoplanen eller nettstedet.',

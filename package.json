@@ -8,13 +8,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && tsx scripts/prerender.tsx && node scripts/sitemap.mjs",
+    "build": "tsc --noEmit && vite build && tsx scripts/prerender.tsx && node scripts/sitemap.mjs && npm run garmin-bundle",
+    "garmin-bundle": "esbuild src/garmin-entry.ts --bundle --format=iife --global-name=BcmGarmin --outfile=dist/garmin.js",
     "preview": "vite preview",
     "test": "vitest run",
+    "garmin-sample": "tsx scripts/garmin-sample.ts",
     "tiles": "node scripts/download-tiles.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.2.8",
+    "@garmin/fitsdk": "^21.218.0",
     "leaflet": "1.9.4",
     "lucide-react": "^0.544.0",
     "maplibre-gl": "4.7.1",

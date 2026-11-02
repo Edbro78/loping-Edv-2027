@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarPlus, Copy, Download } from 'lucide-react';
+import { GarminExportButton } from './GarminExport';
 import { ArmbandCard, ArmbandPrintButton } from './Splits';
 import {
   BCM_URL,
@@ -130,7 +131,10 @@ export function OppsummeringPage() {
             <h3>{o.training.h3}</h3>
             <div className="oppsummering-training-row">
               <p className="oppsummering-training">{trainingBrief}</p>
-              <ArmbandPrintButton />
+              <div className="oppsummering-band-actions">
+                <ArmbandPrintButton />
+                <GarminExportButton plan={plan} />
+              </div>
             </div>
           </>
         )}
@@ -140,7 +144,12 @@ export function OppsummeringPage() {
         <div className="oppsummering-band-wrap">
           <ArmbandCard plan={plan} />
         </div>
-        {!trainingBrief && <ArmbandPrintButton className="oppsummering-band-print--solo" />}
+        {!trainingBrief && (
+          <div className="oppsummering-band-actions oppsummering-band-print--solo">
+            <ArmbandPrintButton />
+            <GarminExportButton plan={plan} />
+          </div>
+        )}
       </div>
 
       <div className="card oppsummering-export">

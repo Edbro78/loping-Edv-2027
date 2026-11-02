@@ -6,13 +6,13 @@ import { elevAt } from '../lib/gpx';
 import { useCourse } from '../state/course';
 import { useUi } from '../i18n/useUi';
 import { useMobileLayout } from '../state/previewLocale';
-import { scrollToView, usePlan, type PlanState } from '../state/plan';
+import { guideAttention, scrollToStepRail, usePlan, type PlanState } from '../state/plan';
 
 function Countdown({ dist }: { dist: 'half' | 'full' }) {
   const m = useUi();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 10);
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
   const target = new Date(RACE_START[dist]).getTime();
@@ -23,7 +23,6 @@ function Countdown({ dist }: { dist: 'half' | 'full' }) {
     [u.hours, Math.floor((diff % 86400000) / 3600000)],
     [u.minutes, Math.floor((diff % 3600000) / 60000)],
     [u.seconds, Math.floor((diff % 60000) / 1000)],
-    [u.hundredths, Math.floor((diff % 1000) / 10)],
   ];
   return (
     <>
@@ -52,10 +51,11 @@ export function Hero() {
   const m = useUi();
   const mobileLayout = useMobileLayout();
   const stepLabels = mobileLayout ? m.hero.stepsShort : m.hero.steps;
+  const attention = guideAttention(state);
 
   function goToStep(view: PlanState['view']) {
     patch({ view });
-    scrollToView(view);
+    scrollToStepRail();
   }
 
   return (
@@ -84,11 +84,12 @@ export function Hero() {
           {stepLabels.map((text, i) => {
             const Icon = STEP_ICONS[i]!;
             const view = STEP_VIEWS[i]!;
+            const live = attention === i + 1;
             return (
               <li key={text}>
                 <button
                   type="button"
-                  className="step-card"
+                  className={`step-card${live ? ' is-attention' : ''}`}
                   onClick={() => goToStep(view)}
                   aria-label={m.hero.stepAria
                     .replace('{n}', String(i + 1))
@@ -99,7 +100,7 @@ export function Hero() {
                     <span className="step-n">{i + 1}</span>
                   </span>
                   <span className="step-text">{text}</span>
-                  {!mobileLayout && (
+                  {live && !mobileLayout && (
                     <span className="step-action" aria-hidden="true">
                       {m.hero.stepAction}
                     </span>

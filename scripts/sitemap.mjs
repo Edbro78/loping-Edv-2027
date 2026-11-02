@@ -13,6 +13,7 @@ const paths = [
   '/praktisk',
   '/trening',
   '/om',
+  '/slik-lop-de-beste',
   '/kontakt',
   '/personvern',
 ];

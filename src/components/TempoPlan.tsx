@@ -4,11 +4,12 @@ import { MAX_TIME, QUICK } from '../config';
 import type { HillKey, SplitKey } from '../config';
 import { hillCopy } from '../i18n/hills';
 import { clockDot, fmtP, fmtT, parseT, quickLabel, sgnS } from '../lib/format';
+import { WINNERS, type WinnerGender } from '../lib/winners';
 import { useActivePlan } from '../state/active';
 import { StepContinue } from './StepContinue';
 import { useUi } from '../i18n/useUi';
 import { usePreviewLocale } from '../state/previewLocale';
-import { scrollToView, usePlan } from '../state/plan';
+import { scrollToView, timeIsSet, usePlan } from '../state/plan';
 
 const TIME_RANGE = {
   half: { min: 60 * 60, max: MAX_TIME.half },
@@ -18,11 +19,13 @@ const TIME_RANGE = {
 function TimeSlider({
   dist,
   seconds,
+  pending,
   onChange,
   copy,
 }: {
   dist: 'half' | 'full';
   seconds: number;
+  pending: boolean;
   onChange: (sec: number) => void;
   copy: ReturnType<typeof useUi>['tempoPlan'];
 }) {
@@ -31,8 +34,8 @@ function TimeSlider({
   const maxM = max / 60;
   const value = Math.min(maxM, Math.max(minM, Math.round(seconds / 60)));
   return (
-    <label className="slider">
-      <span>{copy.finishTime.replace('{time}', fmtT(value * 60))}</span>
+    <label className={`slider${pending ? ' is-pending' : ''}`}>
+      <span>{pending ? copy.finishTimeUnset : copy.finishTime.replace('{time}', fmtT(seconds))}</span>
       <input
         type="range"
         min={minM}
@@ -58,12 +61,15 @@ export function TempoPlan() {
   const { state, patch } = usePlan();
   const { plan } = useActivePlan();
   const T = state.dist === 'full' ? state.targetFull : state.targetHalf;
+  const timeSet = timeIsSet(state);
   const [focus, setFocus] = useState(false);
-  const [draft, setDraft] = useState(fmtT(T));
+  const [draft, setDraft] = useState(timeSet ? fmtT(T) : '');
   const [bad, setBad] = useState(false);
+  const [step2Error, setStep2Error] = useState(false);
+  const [winnersOpen, setWinnersOpen] = useState(false);
   useEffect(() => {
-    if (!focus) setDraft(fmtT(T));
-  }, [T, focus, state.dist]);
+    if (!focus) setDraft(timeSet ? fmtT(T) : '');
+  }, [T, focus, state.dist, timeSet]);
 
   const m = useUi();
   const tp = m.tempoPlan;
@@ -86,11 +92,21 @@ export function TempoPlan() {
 
   function setTarget(sec: number) {
     setBad(false);
+    setStep2Error(false);
     setDraft(fmtT(sec));
-    patch(state.dist === 'full' ? { targetFull: sec } : { targetHalf: sec });
+    patch(
+      state.dist === 'full'
+        ? { targetFull: sec, timeSetFull: true }
+        : { targetHalf: sec, timeSetHalf: true },
+    );
   }
 
   function goToLopeplan() {
+    if (!timeSet) {
+      setStep2Error(true);
+      return;
+    }
+    setStep2Error(false);
     patch({ view: 'splits' });
     scrollToView('splits');
   }
@@ -111,13 +127,19 @@ export function TempoPlan() {
                 className={`target ${bad ? 'bad' : ''}`}
                 inputMode="numeric"
                 aria-invalid={bad}
-                value={focus ? draft : fmtT(T)}
+                placeholder={tp.unsetTime}
+                value={focus || !timeSet ? draft : fmtT(T)}
                 onFocus={() => {
                   setFocus(true);
-                  setDraft(fmtT(T));
+                  setDraft(timeSet ? fmtT(T) : draft);
                 }}
                 onBlur={() => {
                   setFocus(false);
+                  if (!draft.trim()) {
+                    setBad(false);
+                    patch(state.dist === 'full' ? { timeSetFull: false } : { timeSetHalf: false });
+                    return;
+                  }
                   const p = parseT(draft);
                   if (p == null || p <= 0) setBad(true);
                   else setTarget(p);
@@ -125,20 +147,60 @@ export function TempoPlan() {
                 onChange={(e) => {
                   setDraft(e.target.value);
                   const p = parseT(e.target.value);
-                  setBad(p == null);
-                  if (p != null && p > 0) patch(state.dist === 'full' ? { targetFull: p } : { targetHalf: p });
+                  setBad(e.target.value.trim() !== '' && p == null);
+                  if (p != null && p > 0) setTarget(p);
                 }}
               />
-              <span className="hint">{tp.targetAvg.replace('{pace}', fmtP(T / plan.D))}</span>
+              {timeSet && <span className="hint">{tp.targetAvg.replace('{pace}', fmtP(T / plan.D))}</span>}
             </div>
             <div className="pills" role="group" aria-label={tp.quickGroup}>
               {quick.map((s) => (
-                <button key={s} type="button" className={`pill ${T === s ? 'on' : ''}`} onClick={() => setTarget(s)}>
+                <button key={s} type="button" className={`pill ${timeSet && T === s ? 'on' : ''}`} onClick={() => setTarget(s)}>
                   {quickLabel(s)}
                 </button>
               ))}
+              <button
+                type="button"
+                className={`pill pill-winners${winnersOpen ? ' is-open' : ''}`}
+                aria-expanded={winnersOpen}
+                onClick={() => setWinnersOpen((open) => !open)}
+              >
+                {tp.fromWinners}
+              </button>
             </div>
-            <TimeSlider dist={state.dist} seconds={T} onChange={setTarget} copy={tp} />
+            {winnersOpen && (
+              <div className="winner-picks">
+                {(['men', 'women'] as WinnerGender[]).map((gender) => (
+                  <div key={gender} className="winner-group" role="group" aria-label={gender === 'men' ? tp.winnersMen : tp.winnersWomen}>
+                    <p className="winner-gender">{gender === 'men' ? tp.winnersMen : tp.winnersWomen}</p>
+                    {WINNERS[state.dist]
+                      .filter((w) => w.gender === gender)
+                      .map((w) => {
+                        const on = timeSet && T === w.seconds;
+                        return (
+                          <button
+                            key={`${w.gender}-${w.year}-${w.name}`}
+                            type="button"
+                            className={`winner-pick${on ? ' on' : ''}`}
+                            aria-pressed={on}
+                            aria-label={tp.winnerPickAria
+                              .replace('{name}', w.name)
+                              .replace('{year}', String(w.year))
+                              .replace('{time}', w.time)}
+                            onClick={() => setTarget(w.seconds)}
+                          >
+                            <span className="winner-name">
+                              {w.name} <span className="winner-year">{w.year}</span>
+                            </span>
+                            <b>{w.time}</b>
+                          </button>
+                        );
+                      })}
+                  </div>
+                ))}
+              </div>
+            )}
+            <TimeSlider dist={state.dist} seconds={T} pending={!timeSet} onChange={setTarget} copy={tp} />
           </div>
 
           <div className="tempo-form-mid">
@@ -227,6 +289,12 @@ export function TempoPlan() {
         </div>
 
         <div className="result-col">
+          {!timeSet ? (
+            <div className="card result tempo-need-time">
+              <p>{tp.needTime}</p>
+            </div>
+          ) : (
+          <>
           {plan.warnings.map((w) => (
             <div key={w.title} className={`warn-card ${w.level}`} role="status">
               <strong>{w.title}</strong>
@@ -278,8 +346,18 @@ export function TempoPlan() {
               </span>
             </p>
           </div>
+          </>
+          )}
         </div>
-        <StepContinue id="tempo-step-continue" step={3} onClick={goToLopeplan} />
+        <StepContinue
+          id="tempo-step-continue"
+          step={3}
+          phrase={m.stepContinue.goTo.replace('{n}', '3')}
+          muted={!timeSet}
+          attention={timeSet}
+          error={step2Error ? m.stepContinue.needStep.replace('{n}', '2') : undefined}
+          onClick={goToLopeplan}
+        />
       </div>
       <details className="explain">
         <summary>{tp.labels.summaryTitle}</summary>

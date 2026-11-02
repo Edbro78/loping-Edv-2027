@@ -11,6 +11,7 @@ export const ui = {
       praktisk: 'Praktisk',
       trening: 'Trening',
       om: 'Om',
+      beste: 'Slik løp de beste',
       menu: 'Meny',
     },
     skipLink: 'Hopp til innhold',
@@ -24,7 +25,7 @@ export const ui = {
       privacy: 'Personvern',
     },
     hero: {
-      kicker: 'Bergen City Marathon 2027 · uavhengig guide',
+      kicker: 'BCM Marathon 2027 - uavhengig guide',
       h1: 'BCM løpeguide, 5 steg fra plan til gjennomføring',
       countdown: {
         started: 'Løpet har startet',
@@ -35,7 +36,6 @@ export const ui = {
           hours: 'Timer',
           minutes: 'Minutter',
           seconds: 'Sekunder',
-          hundredths: 'Hundredeler',
         },
       },
       course: {
@@ -66,13 +66,19 @@ export const ui = {
     stepContinue: {
       nextStep: 'Neste steg',
       aria: 'Neste steg {n}: {label}',
+      goTo: 'Gå videre til steg {n}',
+      needStep: 'Du har ikke fylt inn steg {n}.',
     },
     distance: {
       title: 'Velge distanse',
       intro: 'Velg halvmaraton eller maraton. Sluttid, plan og trening følger valget.',
       half: 'Halvmaraton',
       full: 'Maraton',
+      unset: 'Ikke valgt distanse',
       aria: 'Distanse',
+      needStep1: 'Du har ikke fylt inn steg 1.',
+      notChosen: 'Distanse ikke valgt',
+      continue: 'Gå videre til steg 2',
     },
     splits: {
       chartExpand: 'Åpne løpeplan-graf i fullskjerm, liggende',
@@ -166,8 +172,16 @@ export const ui = {
       h2: 'Ønsket sluttid',
       intro: 'Jevn innsats i bakkene – alt oppdateres mens du endrer, og lagres på enheten.',
       targetLabel: 'Mål-sluttid',
+      unsetTime: 'Velg tid',
+      finishTimeUnset: 'Dra for å velge sluttid',
+      needTime: 'Velg en sluttid for å se tempoet.',
+      notChosen: 'Sluttid ikke valgt',
       targetAvg: '{pace}/km i snitt',
       quickGroup: 'Hurtigvalg',
+      fromWinners: 'Velg fra vinnerne',
+      winnersMen: 'Menn',
+      winnersWomen: 'Kvinner',
+      winnerPickAria: '{name}, {year}, sluttid {time}',
       finishTime: 'Sluttid {time}',
       finishTimeAria: 'Sluttid',
       splitSigma: 'Split σ {sigma} %',
@@ -330,7 +344,7 @@ export const ui = {
     },
     oppsummering: {
       loading: 'Laster oppsummering…',
-      h2: 'Oppsummering',
+      h2: 'Oppsummering - Nedlasting Garmin',
       intro: 'Kort oversikt over planen din – klar til å lagre, kopiere eller dele.',
       dl: {
         distance: 'Distanse',
@@ -382,6 +396,41 @@ export const ui = {
     armband: {
       print: 'Skriv ut armbånd',
     },
+    garmin: {
+      export: 'Eksporter til Garmin',
+      dialogTitle: 'Garmin-økt (.FIT)',
+      intro:
+        'Filen lages i nettleseren ut fra tempoplanen din. Ingenting sendes videre. Klokka piper ved hvert steg og viser tempomålet.',
+      modeLegend: 'Inndeling',
+      modeSegment: 'Segmenter',
+      modeKm: 'Per km',
+      toleranceLegend: 'Tempotoleranse',
+      toleranceOption: '±{sec} s/km',
+      gpsLabel: 'Kompenser for GPS-avvik',
+      gpsHelp:
+        'Klokka måler ofte litt lenger enn den offisielle løypa. Av er standard. Kryss av for å gjøre hvert steg 0,5 % lenger (faktor 1,005).',
+      download: 'Last ned .FIT',
+      working: 'Lager filen…',
+      close: 'Lukk',
+      guideTitle: 'Slik legger du økta på klokka',
+      guide: [
+        'Koble klokka til datamaskinen med USB.',
+        'Åpne klokka som en disk og legg filen i mappen GARMIN/NewFiles. På noen modeller heter mappen GARMIN/Workouts.',
+        'Koble fra klokka. Økta ligger under Trening → Økter. Hvis den ikke dukker opp, start klokka på nytt.',
+        'Start økta på startstreken.',
+      ] as const,
+      gpsNote: 'Klokka kan måle litt lenger enn løypa, så segmentskiftene kan komme noe tidlig.',
+      merged:
+        'Planen hadde flere steg enn klokka tåler. Nabosegmenter med likt terreng er slått sammen, så du får færre pip.',
+      errors: {
+        'invalid-pace': 'Tempoplanen har et steg uten gyldig tempo. Juster sluttiden og prøv igjen.',
+        'invalid-distance': 'Et steg har ugyldig distanse. Lag planen på nytt og prøv igjen.',
+        'distance-mismatch': 'Summen av stegene stemmer ikke med løpsdistansen. Lag planen på nytt og prøv igjen.',
+        'too-many-steps': 'Planen har for mange steg til Garmin-klokka, selv etter at like partier er slått sammen.',
+        'pace-tolerance': 'Tempotoleransen er for stor for det tregeste steget. Velg en mindre toleranse.',
+        unknown: 'Kunne ikke lage Garmin-filen. Prøv igjen.',
+      },
+    },
     hoydeprofil: {
       kicker: 'Løype',
       h1: 'Høydeprofil og kart',
@@ -415,7 +464,7 @@ export const ui = {
     homeIntro: {
       h2s: ['Mer om guiden', 'Artikler og dypdykk'] as const,
       paragraphs: [
-        'Denne siden er laget for løpere som skal ta halvmaraton eller maraton i Bergen, og som vil forstå løypa før startskuddet. Verktøyet over følger fire steg: velg distanse, sett måltid, les løpeplanen og sjekk milepæler de siste nitti dagene. Alt lagres lokalt i nettleseren – ingen konto.',
+        'Denne siden er laget for løpere som skal ta halvmaraton eller maraton i Bergen, og som vil forstå løypa før startskuddet. Verktøyet over følger fem steg: velg distanse, sett måltid, les løpeplanen, sjekk milepæler de siste nitti dagene, og til slutt en oppsummering der du kan laste ned kalenderinvitasjon og Garmin-fil. Alt lagres lokalt i nettleseren – ingen konto.',
         'Bergen City Marathon er en byrunde som starter og slutter ved Bryggen. Maratonløpere tar to runder; halvmaraton én. Det som skiller denne guiden fra et generelt løpsmagasin, er at den er bygget rundt den faktiske traséen: høydeprofil fra GPS-spor, drikkestasjoner plassert der de ligger i praksis, og en tempomodell som lar deg være «bak klokka» der det stiger uten å panikke.',
         'Mange kommer til BCM med et måltid fra flat mark. Da er det lett å undervurdere hvor mye Fjellveien og brosteinen i sentrum koster. Guiden viser ikke bare hvor det går opp og ned, men hva det betyr for pacing: jevn innsats i motbakke er ikke det samme som jevn kilometerfart. Kalkulatoren regner om sluttiden din til flatfart, segmenttider og klokkeslett ved kjente steder, slik at du kan skrive et armbåndskort som tåler virkeligheten.',
         'Innholdet er skrevet analytisk, ikke kopiert fra arrangørens nettsider. Der jeg mangler egne bilder eller personlige erfaringer fra konkrete partier, står det markert i teksten – det er bevisst, slik at siden vokser med dine notater og foto etter hvert. Fakta som starttider, cut-off og program kan endre seg; sjekk alltid bergencitymarathon.no for påmelding og offisielle oppdateringer.',
@@ -473,6 +522,11 @@ export const ui = {
         title: 'Om denne løpeguiden',
         description:
           'Hvem som står bak siden, hvorfor den finnes, og at den er uavhengig av TIF Viking og Bergen City Marathon.',
+      },
+      '/slik-lop-de-beste': {
+        title: 'Slik løp de beste – Bergen City Marathon',
+        description:
+          'Tolv seire og ni vinnere fra 2024 til 2026: tempo, dueller og hvor løpene ble avgjort.',
       },
       '/kontakt': {
         title: 'Kontakt',
@@ -537,6 +591,7 @@ export const ui = {
       praktisk: 'Practical info',
       trening: 'Training',
       om: 'About',
+      beste: 'How the winners raced',
       menu: 'Menu',
     },
     skipLink: 'Skip to content',
@@ -550,7 +605,7 @@ export const ui = {
       privacy: 'Privacy',
     },
     hero: {
-      kicker: 'Bergen City Marathon 2027 · independent guide',
+      kicker: 'BCM Marathon 2027 - independent guide',
       h1: 'BCM race guide, 5 steps from plan to race day',
       countdown: {
         started: 'The race has started',
@@ -561,7 +616,6 @@ export const ui = {
           hours: 'Hours',
           minutes: 'Minutes',
           seconds: 'Seconds',
-          hundredths: 'Hundredths',
         },
       },
       course: {
@@ -592,13 +646,19 @@ export const ui = {
     stepContinue: {
       nextStep: 'Next step',
       aria: 'Next step {n}: {label}',
+      goTo: 'Continue to step {n}',
+      needStep: 'You have not filled in step {n}.',
     },
     distance: {
       title: 'Choose distance',
       intro: 'Pick half marathon or marathon. Finish time, plan, and training follow your choice.',
       half: 'Half marathon',
       full: 'Marathon',
+      unset: 'No distance selected',
       aria: 'Distance',
+      needStep1: 'You have not filled in step 1.',
+      notChosen: 'Distance not selected',
+      continue: 'Continue to step 2',
     },
     splits: {
       chartExpand: 'Open race plan chart in fullscreen landscape',
@@ -692,8 +752,16 @@ export const ui = {
       h2: 'Target finish time',
       intro: 'Even effort on the hills—everything updates as you change settings and is saved on your device.',
       targetLabel: 'Target finish time',
+      unsetTime: 'Choose a time',
+      finishTimeUnset: 'Drag to choose a finish time',
+      needTime: 'Choose a finish time to see the pace.',
+      notChosen: 'Finish time not selected',
       targetAvg: '{pace}/km average',
       quickGroup: 'Quick picks',
+      fromWinners: 'Choose from the winners',
+      winnersMen: 'Men',
+      winnersWomen: 'Women',
+      winnerPickAria: '{name}, {year}, finish time {time}',
       finishTime: 'Finish time {time}',
       finishTimeAria: 'Finish time',
       splitSigma: 'Split σ {sigma} %',
@@ -857,7 +925,7 @@ export const ui = {
     },
     oppsummering: {
       loading: 'Loading summary…',
-      h2: 'Summary',
+      h2: 'Summary - Garmin download',
       intro: 'A quick overview of your plan—ready to save, copy, or share.',
       dl: {
         distance: 'Distance',
@@ -909,6 +977,41 @@ export const ui = {
     armband: {
       print: 'Print wristband',
     },
+    garmin: {
+      export: 'Export to Garmin',
+      dialogTitle: 'Garmin workout (.FIT)',
+      intro:
+        'The file is built in your browser from this pace plan. Nothing is sent anywhere. The watch beeps at each step and shows the target pace.',
+      modeLegend: 'Splits',
+      modeSegment: 'Segments',
+      modeKm: 'Per km',
+      toleranceLegend: 'Pace tolerance',
+      toleranceOption: '±{sec} s/km',
+      gpsLabel: 'Compensate for GPS drift',
+      gpsHelp:
+        'The watch often measures a little longer than the official course. Off is the default. Tick this to make every step 0.5% longer (factor 1.005).',
+      download: 'Download .FIT',
+      working: 'Building the file…',
+      close: 'Close',
+      guideTitle: 'How to put the workout on your watch',
+      guide: [
+        'Connect the watch to your computer with USB.',
+        'Open the watch as a drive and put the file in GARMIN/NewFiles. On some models the folder is GARMIN/Workouts.',
+        'Disconnect the watch. The workout is under Training → Workouts. If it does not show up, restart the watch.',
+        'Start the workout on the start line.',
+      ] as const,
+      gpsNote: 'The watch can measure a little longer than the course, so the segment changes may come slightly early.',
+      merged:
+        'The plan had more steps than the watch allows. Neighbouring segments with the same terrain were merged, so you get fewer beeps.',
+      errors: {
+        'invalid-pace': 'The pace plan has a step without a valid pace. Adjust the finish time and try again.',
+        'invalid-distance': 'A step has an invalid distance. Rebuild the plan and try again.',
+        'distance-mismatch': 'The steps do not add up to the race distance. Rebuild the plan and try again.',
+        'too-many-steps': 'The plan has too many steps for a Garmin watch, even after similar stretches are merged.',
+        'pace-tolerance': 'The pace tolerance is too wide for the slowest step. Choose a smaller tolerance.',
+        unknown: 'Could not build the Garmin file. Try again.',
+      },
+    },
     hoydeprofil: {
       kicker: 'Course',
       h1: 'Elevation profile & map',
@@ -942,7 +1045,7 @@ export const ui = {
     homeIntro: {
       h2s: ['More about the guide', 'Articles & deep dives'] as const,
       paragraphs: [
-        'This site is for runners tackling the half marathon or marathon in Bergen who want to understand the course before the gun goes off. The tool above follows four steps: choose distance, set a target time, read the race plan, and check milestones in the last ninety days. Everything is stored locally in your browser—no account.',
+        'This site is for runners tackling the half marathon or marathon in Bergen who want to understand the course before the gun goes off. The tool above follows five steps: choose distance, set a target time, read the race plan, check milestones in the last ninety days, and finish with a summary where you can download a calendar invite and a Garmin file. Everything is stored locally in your browser—no account.',
         'Bergen City Marathon is a city loop that starts and finishes at Bryggen. Marathoners run two laps; half-marathoners one. What sets this guide apart from a generic race magazine is that it is built around the actual route: elevation from GPS tracks, aid stations where they really are, and a pacing model that lets you be “behind the clock” on the climbs without panicking.',
         'Many arrive at BCM with a target from flat terrain. It is easy to underestimate what Fjellveien and the cobbles downtown cost. The guide shows not only where it goes up and down, but what that means for pacing: even effort on climbs is not the same as even kilometre pace. The calculator turns your finish time into flat pace, segment times, and clock times at familiar spots, so you can write a wristband card that survives race day.',
         'The content is written analytically, not copied from the organiser’s site. Where I lack my own photos or personal notes from specific sections, that is marked in the text—on purpose, so the site can grow with your notes and pictures over time. Facts such as start times, cut-offs, and schedule can change; always check bergencitymarathon.no for registration and official updates.',
@@ -1000,6 +1103,11 @@ export const ui = {
         title: 'About this race guide',
         description:
           'Who runs the site, why it exists, and that it is independent of TIF Viking and Bergen City Marathon.',
+      },
+      '/slik-lop-de-beste': {
+        title: 'How the winners raced – Bergen City Marathon',
+        description:
+          'Twelve wins and nine winners from 2024 to 2026: pace, duels, and where the races were decided.',
       },
       '/kontakt': {
         title: 'Contact',

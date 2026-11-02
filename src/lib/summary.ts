@@ -143,7 +143,7 @@ export function buildPlanSummaryText(plan: Plan, state: PlanState, locale: Local
 
   lines.push('', s.trainingSection, '-------', formatTrainingBrief(plan, locale));
 
-  lines.push('', s.official, BCM_URL, '', s.generated);
+  lines.push('', s.generated);
   const gu = guideUrl();
   if (gu) lines.push(gu);
 

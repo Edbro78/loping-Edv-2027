@@ -13,6 +13,7 @@ import { TempostrategiPage } from './pages/TempostrategiPage';
 import { PraktiskPage } from './pages/PraktiskPage';
 import { TreningPage } from './pages/TreningPage';
 import { OmPage } from './pages/OmPage';
+import { VinnerePage } from './pages/VinnerePage';
 import { KontaktPage } from './pages/KontaktPage';
 import { PersonvernPage } from './pages/PersonvernPage';
 
@@ -32,6 +33,7 @@ export function App() {
               <Route path="praktisk" element={<PraktiskPage />} />
               <Route path="trening" element={<TreningPage />} />
               <Route path="om" element={<OmPage />} />
+              <Route path="slik-lop-de-beste" element={<VinnerePage />} />
               <Route path="kontakt" element={<KontaktPage />} />
               <Route path="personvern" element={<PersonvernPage />} />
             </Route>

@@ -18,7 +18,7 @@ import { addDays, daysBetween, lookupMilestones, rngT, slowerThan, weekKms, WEEK
 import { useActivePlan } from '../state/active';
 import { StepContinue } from './StepContinue';
 import { useUi } from '../i18n/useUi';
-import { scrollToView, usePlan } from '../state/plan';
+import { guideAttention, scrollToView, usePlan } from '../state/plan';
 
 const RACE = new Date(Date.UTC(2027, 3, 24));
 const FORECAST_FROM = new Date('2027-04-15T00:00:00+02:00');
@@ -40,7 +40,7 @@ export function MilePage() {
 
 export function MileFormkrav() {
   const { plan } = useActivePlan();
-  const { patch } = usePlan();
+  const { state, patch } = usePlan();
   const m = useUi();
   const mi = m.mile;
   if (!plan) return null;
@@ -126,9 +126,13 @@ export function MileFormkrav() {
           </span>
         ))}
       </div>
-      <p className="help">
-        {mi.weeksHelp.replace('{lo}', String(hit.vol[0])).replace('{hi}', String(hit.vol[1]))}
-      </p>
+      <StepContinue
+        id="mile-step-continue"
+        step={5}
+        phrase={m.stepContinue.goTo.replace('{n}', '5')}
+        attention={guideAttention(state) === 5}
+        onClick={goToOppsummering}
+      />
 
       <div className="test-grid">
         {tests.map((t) => {
@@ -159,8 +163,6 @@ export function MileFormkrav() {
           );
         })}
       </div>
-
-      <StepContinue id="mile-step-continue" step={5} onClick={goToOppsummering} />
 
       <div className="section-head">
         <h3>{mi.matrixH3.replace('{dist}', distName)}</h3>
