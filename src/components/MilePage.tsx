@@ -51,11 +51,6 @@ export function MileFormkrav() {
   }
   const hit = lookupMilestones(plan.input.full, plan.input.T);
   const distName = plan.input.full ? mi.distFull : mi.distHalf;
-  const how = hit.outside
-    ? mi.howOutside
-    : hit.exact
-      ? mi.howExact.replace('{row}', hit.nearestLabel)
-      : mi.howInterp.replace('{a}', hit.aLabel).replace('{b}', hit.bLabel);
   const weeks = weekKms(hit.vol);
   const peak = (hit.vol[0] + hit.vol[1]) / 2 || 1;
   const tests: { week: number; title: string; key: 'k3' | 'k5' | 'k10'; dist: number; margin: number }[] = [
@@ -78,9 +73,11 @@ export function MileFormkrav() {
       <h2 id="mile-tittel">
         {mi.title.replace('{dist}', distName).replace('{time}', fmtT(plan.input.T))}
       </h2>
-      <p className="intro">
-        {mi.intro.replace('{time}', fmtT(plan.input.T)).replace('{dist}', distName).replace('{how}', how)}
-      </p>
+      {mi.intro.map((line) => (
+        <p className="intro" key={line}>
+          {line}
+        </p>
+      ))}
       <div className="kpis four">
         <div className="kpi card">
           <span>{mi.volKpi}</span>

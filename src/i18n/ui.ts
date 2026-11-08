@@ -311,11 +311,10 @@ export const ui = {
       loading: 'Laster milepæler…',
       kicker: 'De siste 90 dagene',
       title: 'Anbefalte milepæler for {dist} på {time}',
-      intro:
-        'Tempoplanen din sikter mot {time}. Kravene under er hentet fra VDOT- og Riegel-tabellen for {dist}{how}. De oppdateres når du endrer måltid i tempoplanen.',
-      howOutside: ' – måltiden ligger utenfor tabellen, nærmeste rad brukes',
-      howExact: ' (raden {row})',
-      howInterp: ' og interpolert mellom {a} og {b}',
+      intro: [
+        'Milepæler er tre definerte løpsdistanser du må beherske.',
+        'For at måltiden din skal være realistisk må du klare å løpe 3 km, 5 km og 10 km på den oppgitte tiden under.',
+      ] as const,
       volKpi: 'Km per uke, siste 3 mnd',
       volEm: 'Anbefalt ukentlig volum',
       min3: 'Minimum 3 km',
@@ -890,11 +889,10 @@ export const ui = {
       loading: 'Loading milestones…',
       kicker: 'The last 90 days',
       title: 'Recommended milestones for {dist} at {time}',
-      intro:
-        'Your pace plan targets {time}. The requirements below come from the VDOT and Riegel table for {dist}{how}. They update when you change your goal in the pace plan.',
-      howOutside: ' – goal is outside the table; nearest row is used',
-      howExact: ' (row {row})',
-      howInterp: ', interpolated between {a} and {b}',
+      intro: [
+        'Milestones are three set race distances you need to master.',
+        'For your goal time to be realistic, you need to run 3 km, 5 km and 10 km in the times listed below.',
+      ] as const,
       volKpi: 'Km per week, last 3 months',
       volEm: 'Recommended weekly volume',
       min3: 'Minimum 3 km',

@@ -806,6 +806,30 @@ html.preview-mobile { background: #12161c; }
   color: #fff;
   transform: translateX(2px);
 }
+@keyframes step-continue-pulse {
+  0%, 100% {
+    transform: scale(1);
+    border-color: rgb(240 90 26 / 0.65);
+    box-shadow: 0 8px 18px rgb(240 90 26 / 0.16), 0 0 0 0 rgb(240 90 26 / 0.5);
+    background: linear-gradient(135deg, #fff 0%, #fff4ec 100%);
+  }
+  50% {
+    transform: scale(1.045);
+    border-color: var(--c-bcm);
+    box-shadow: 0 18px 40px rgb(240 90 26 / 0.42), 0 0 0 12px rgb(240 90 26 / 0.24);
+    background: linear-gradient(135deg, #fff 0%, #ffd8bc 100%);
+  }
+}
+@keyframes step-continue-arrow-nudge {
+  0%, 100% { transform: translateX(0); background: #fff; color: var(--c-bcm); border-color: var(--c-bcm-100); }
+  50% { transform: translateX(8px); background: var(--c-bcm); color: #fff; border-color: var(--c-bcm); }
+}
+.step-continue-btn.is-attention {
+  animation: step-continue-pulse 1.25s ease-in-out infinite;
+}
+.step-continue-btn.is-attention .step-continue-arrow {
+  animation: step-continue-arrow-nudge 1.25s ease-in-out infinite;
+}
 .test-grid + .step-continue-wrap { margin-top: 20px; margin-bottom: 8px; }
 .home-intro { scroll-margin-top: calc(56px + env(safe-area-inset-top, 0px) + 24px); }
 .oppsummering-section .oppsummering-lead { margin-bottom: 16px; }
@@ -1151,7 +1175,29 @@ html.preview-mobile { background: #12161c; }
   letter-spacing: 0.01em;
   color: var(--c-bcm-700);
 }
-.distanse-card .seg.is-attention { border: 2px solid rgb(240 90 26 / 0.55); }
+.distanse-card .seg.is-attention {
+  border: 2px solid rgb(240 90 26 / 0.75);
+  animation: distanse-pulse 1.5s ease-in-out infinite;
+}
+.distanse-card .seg.is-attention button {
+  animation: distanse-btn-pulse 1.5s ease-in-out infinite;
+}
+@keyframes distanse-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(240 90 26 / 0.5);
+    border-color: rgb(240 90 26 / 0.55);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 8px rgb(240 90 26 / 0.16);
+    border-color: var(--c-bcm);
+  }
+}
+@keyframes distanse-btn-pulse {
+  0%, 100% { background: transparent; color: var(--c-fjord-500); }
+  50% { background: rgb(240 90 26 / 0.16); color: var(--c-bcm-700); }
+}
 .distanse-card .seg { width: max-content; }
 .distanse-card .seg button { min-width: 160px; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
@@ -1736,7 +1782,10 @@ html.site-mobile .step-text,
   .step-card,
   .step-card.is-attention,
   .seg.is-attention,
+  .distanse-card .seg.is-attention,
+  .distanse-card .seg.is-attention button,
   .step-continue-btn.is-attention,
+  .step-continue-btn.is-attention .step-continue-arrow,
   .step-rail-btn.is-on,
   .step-rail-arrow { animation: none; }
   .step-card.is-attention,
