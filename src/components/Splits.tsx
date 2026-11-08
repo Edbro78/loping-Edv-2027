@@ -94,28 +94,25 @@ function Segments({
     const grade = gradeOf(g);
     const terr = terrOf(s.a, s.b, grade);
     const pace = g.len ? (g.t + g.stops) / g.len : 0;
-    const gap = g.fd ? g.t / g.fd : 0;
     const cum = plan.tAt(s.b);
     const dev = cum - s.b * (plan.input.T / plan.D);
     const meta = TERR[terr];
     return (
       <tr key={`${s.a}-${s.name}`} style={{ background: meta.bg }}>
-        <th scope="row">
+        <td className="lead-time">{fmtT(cum)}</td>
+        <th scope="row" className="seg-label">
           <span className="seg-name">{s.name}</span>
           <span className="chip" style={{ background: meta.chipBg, color: meta.chipFg }}>{terrain[terr]}</span>
           <span className="km-range">
             {copy.kmRange.replace('{a}', kmL(s.a)).replace('{b}', kmL(s.b))}
           </span>
         </th>
-        <td>{Math.round(g.len * 1000)}</td>
-        <td>{sgn(grade)}</td>
-        <td>+{Math.round(g.up)} / −{Math.round(g.dn)}</td>
         <td>{fmtT(g.t + g.stops)}</td>
         <td>{fmtP(pace)}</td>
-        <td>{fmtP(gap)}</td>
-        <td>{fmtT(cum)}</td>
         <td>{clockS(plan.input.start, cum)}</td>
         <td className={dev < -0.5 ? 'ahead' : 'behind'}>{sgnS(dev)}</td>
+        <td>{sgn(grade)}</td>
+        <td>{Math.round(g.len * 1000)}</td>
       </tr>
     );
   };
@@ -124,16 +121,14 @@ function Segments({
     const g = plan.agg(a, b);
     return (
       <tr key={title} className="sum">
-        <th scope="row">{title}</th>
-        <td>{Math.round(g.len * 1000)}</td>
-        <td>{sgn(gradeOf(g))}</td>
-        <td>+{Math.round(g.up)} / −{Math.round(g.dn)}</td>
+        <td className="lead-time">{fmtT(plan.tAt(b))}</td>
+        <th scope="row" className="seg-label">{title}</th>
         <td>{fmtT(g.t + g.stops)}</td>
         <td>{fmtP(g.len ? (g.t + g.stops) / g.len : 0)}</td>
-        <td>{fmtP(g.fd ? g.t / g.fd : 0)}</td>
-        <td>{fmtT(plan.tAt(b))}</td>
         <td>{clockS(plan.input.start, plan.tAt(b))}</td>
         <td>{sgnS(plan.tAt(b) - b * (plan.input.T / plan.D))}</td>
+        <td>{sgn(gradeOf(g))}</td>
+        <td>{Math.round(g.len * 1000)}</td>
       </tr>
     );
   };
@@ -158,10 +153,10 @@ function Segments({
           <tbody>
             {full ? (
               <>
-                <tr className="round"><th colSpan={10}>{copy.round1}</th></tr>
+                <tr className="round"><th colSpan={copy.segHeaders.length}>{copy.round1}</th></tr>
                 {r1.map(row)}
                 {sum(0, LAP, copy.sumRound1)}
-                <tr className="round"><th colSpan={10}>{copy.round2}</th></tr>
+                <tr className="round"><th colSpan={copy.segHeaders.length}>{copy.round2}</th></tr>
                 {r2.map(row)}
                 {sum(LAP, plan.D, copy.sumRound2)}
               </>
@@ -209,11 +204,11 @@ function PerKm({ plan, copy }: { plan: Plan; copy: UiCopy['splits'] }) {
                   </tr>
                 )}
                 <tr className={r.steep ? 'steep' : ''}>
+                  <td className="lead-time">{fmtP(r.pace)}</td>
                   <th scope="row">{r.label}</th>
                   <td className={r.steep ? 'hot' : ''}>{sgn(r.grade)}</td>
                   <td>{sgn(r.g.up - r.g.dn, 0)}</td>
                   <td>{nb(r.g.len ? r.g.fd / r.g.len : 0, 3)}</td>
-                  <td>{fmtP(r.pace)}</td>
                   <td>{fmtP(r.gap)}</td>
                   <td>{fmtT(cum)}</td>
                   <td>{clockS(plan.input.start, cum)}</td>
