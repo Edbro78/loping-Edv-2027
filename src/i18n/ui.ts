@@ -313,7 +313,7 @@ export const ui = {
       title: 'Anbefalte milepæler for {dist} på {time}',
       intro: [
         'Milepæler er tre definerte løpsdistanser du må beherske.',
-        'For at måltiden din skal være realistisk må du klare å løpe 3 km, 5 km og 10 km på den oppgitte tiden under.',
+        'For at måltiden din skal være realistisk må du klare å løpe 3 km, 5 km og 10 km på den oppgitte tiden under. Antall løpte km per uke må også være innenfor kravet.',
       ] as const,
       volKpi: 'Km per uke, siste 3 mnd',
       volEm: 'Anbefalt ukentlig volum',
@@ -891,7 +891,7 @@ export const ui = {
       title: 'Recommended milestones for {dist} at {time}',
       intro: [
         'Milestones are three set race distances you need to master.',
-        'For your goal time to be realistic, you need to run 3 km, 5 km and 10 km in the times listed below.',
+        'For your goal time to be realistic, you need to run 3 km, 5 km and 10 km in the times listed below. The kilometres you run per week must also be within the requirement.',
       ] as const,
       volKpi: 'Km per week, last 3 months',
       volEm: 'Recommended weekly volume',
