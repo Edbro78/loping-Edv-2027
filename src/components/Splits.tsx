@@ -39,19 +39,6 @@ export function Splits() {
   return (
     <section className="section" aria-labelledby="mellom-tittel">
       <h2 id="mellom-tittel">{m.splits.h2}</h2>
-      <div className="legend-row" aria-hidden="true">
-        <span><i className="swatch pace" /> {m.splits.legendPace}</span>
-        <span><i className="swatch gap" /> {m.splits.legendGap}</span>
-        <span><i className="swatch elev" /> {m.splits.legendElev}</span>
-      </div>
-      <PaceChartCard plan={plan} points={course.points} />
-      <StepContinue
-        id="splits-step-continue"
-        step={4}
-        phrase={m.stepContinue.goTo.replace('{n}', '4')}
-        attention={guideAttention(state) === 4}
-        onClick={goToMilepaeler}
-      />
       <div className="subtabs" role="tablist" aria-label={m.splits.tablist}>
         {(
           [
@@ -67,6 +54,19 @@ export function Splits() {
       {state.tab === 'seg' && <Segments plan={plan} marks={m.marks} terrain={m.terrain} copy={m.splits} />}
       {state.tab === 'km' && <PerKm plan={plan} copy={m.splits} />}
       <Reference plan={plan} points={course.points} copy={m.splits} marks={m.marks} />
+      <StepContinue
+        id="splits-step-continue"
+        step={4}
+        phrase={m.stepContinue.goTo.replace('{n}', '4')}
+        attention={guideAttention(state) === 4}
+        onClick={goToMilepaeler}
+      />
+      <div className="legend-row" aria-hidden="true">
+        <span><i className="swatch pace" /> {m.splits.legendPace}</span>
+        <span><i className="swatch gap" /> {m.splits.legendGap}</span>
+        <span><i className="swatch elev" /> {m.splits.legendElev}</span>
+      </div>
+      <PaceChartCard plan={plan} points={course.points} />
     </section>
   );
 }

@@ -315,8 +315,8 @@ const praktiskNb: ArticleDoc = {
   h1: 'Praktisk til Bergen City Marathon',
   lead:
     'Løpsdagen handler om mer enn fart. Garderobe, transport, søvn og hva du har i sekken avgjør om tempoplanen får en fair sjanse. Fakta under bygger på tilgjengelig programinformasjon; 2027-programmet kan avvike.',
-  homeToolLink:
-    'Program, drikkestasjoner og værnotater finner du i verktøyet på forsiden (milepæler og planlegger).',
+  homeToolTo: '/drikkestasjoner',
+  homeToolLink: 'Drikkestasjoner, toaletter, vær og løpsdagens tider ligger på egen side.',
   blocks: [
     { type: 'h2', text: 'Start og mål' },
     {
@@ -352,8 +352,8 @@ const praktiskEn: ArticleDoc = {
   h1: 'Practical guide to Bergen City Marathon',
   lead:
     'Race day is about more than pace. Bag drop, transport, sleep, and what is in your pack decide whether your pace plan gets a fair chance. Facts below are based on available programme information; the 2027 schedule may differ.',
-  homeToolLink:
-    'Find the schedule, aid stations, and weather notes in the tools on the homepage (milestones and planner).',
+  homeToolTo: '/drikkestasjoner',
+  homeToolLink: 'Aid stations, toilets, weather, and race-day times are on their own page.',
   blocks: [
     { type: 'h2', text: 'Start and finish' },
     {

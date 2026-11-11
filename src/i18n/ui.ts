@@ -6,6 +6,7 @@ export const ui = {
       home: 'Forside',
       loypeguide: 'Løypeguide',
       hoydeprofil: 'Høydeprofil og løypekart',
+      drikkestasjoner: 'Drikkestasjoner',
       tempoplan: 'Tempoplan',
       tempostrategi: 'Tempostrategi',
       praktisk: 'Praktisk',
@@ -389,6 +390,7 @@ export const ui = {
         postCopied: 'Facebook-tekst kopiert',
       },
       copyFailed: 'Kunne ikke kopiere – prøv last ned i stedet.',
+      flyCourse: 'Fly ditt løp over løypen i 3d',
     },
     armband: {
       print: 'Skriv ut armbånd',
@@ -469,6 +471,7 @@ export const ui = {
       linkBlurbs: {
         loypeguide: 'Bryggen, Gamle Bergen, Fjellveien, Store Lungegårdsvann, Nygårdsparken og Nordnes.',
         hoydeprofil: 'interaktiv graf og kart over løypa.',
+        drikkestasjoner: 'drikkestasjoner, toaletter, vær og tider på løpsdagen.',
         tempoplan: 'hvordan kalkulatoren på forsiden tenker pacing.',
         tempostrategi: 'hvordan fordele krefter på kupert bylløype.',
         praktisk: 'garderobe, transport, overnatting og utstyr.',
@@ -494,6 +497,11 @@ export const ui = {
         title: 'Høydeprofil og kart – Bergen City Marathon 2027',
         description:
           'Interaktiv høydeprofil og kart over BCM-løypa: stigning mot Fjellveien, etapper og drikkestasjoner.',
+      },
+      '/drikkestasjoner': {
+        title: 'Drikkestasjoner og toaletter – Bergen City Marathon 2027',
+        description:
+          'Drikkestasjoner, toaletter, vær, bekledning og praktiske tider langs BCM-løypa.',
       },
       '/tempoplan': {
         title: 'Tempoplan og kalkulator – Bergen City Marathon',
@@ -583,6 +591,7 @@ export const ui = {
       home: 'Home',
       loypeguide: 'Course guide',
       hoydeprofil: 'Elevation & map',
+      drikkestasjoner: 'Aid stations',
       tempoplan: 'Pace plan',
       tempostrategi: 'Pacing strategy',
       praktisk: 'Practical info',
@@ -967,6 +976,7 @@ export const ui = {
         postCopied: 'Facebook text copied',
       },
       copyFailed: 'Could not copy—try download instead.',
+      flyCourse: 'Fly your race over the course in 3D',
     },
     armband: {
       print: 'Print wristband',
@@ -1047,6 +1057,7 @@ export const ui = {
       linkBlurbs: {
         loypeguide: 'Bryggen, Gamle Bergen, Fjellveien, Store Lungegårdsvann, Nygårdsparken, and Nordnes.',
         hoydeprofil: 'interactive chart and map of the course.',
+        drikkestasjoner: 'aid stations, toilets, weather, and race-day times.',
         tempoplan: 'how the home-page calculator thinks about pacing.',
         tempostrategi: 'how to distribute effort on a hilly city course.',
         praktisk: 'bag drop, transport, hotels, and gear.',
@@ -1072,6 +1083,11 @@ export const ui = {
         title: 'Elevation profile & map – Bergen City Marathon 2027',
         description:
           'Interactive elevation profile and map of the BCM course: climbing toward Fjellveien, segments, and aid stations.',
+      },
+      '/drikkestasjoner': {
+        title: 'Aid stations and toilets – Bergen City Marathon 2027',
+        description:
+          'Aid stations, toilets, weather, clothing, and practical times along the BCM course.',
       },
       '/tempoplan': {
         title: 'Pace plan & calculator – Bergen City Marathon',

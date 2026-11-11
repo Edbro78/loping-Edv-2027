@@ -31,9 +31,6 @@ export function MilePage() {
     <div className="mile">
       <MileFormkrav />
       <MileStages />
-      <MileAid />
-      <MileWeather />
-      <MilePractical />
     </div>
   );
 }

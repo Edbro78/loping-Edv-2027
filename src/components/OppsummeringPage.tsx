@@ -15,8 +15,31 @@ import { clockDot, fmtP, fmtT } from '../lib/format';
 import { hillCopy } from '../i18n/hills';
 import { useUi } from '../i18n/useUi';
 import { useActivePlan } from '../state/active';
-import { usePlan } from '../state/plan';
+import { scrollToId, usePlan } from '../state/plan';
 import { usePreviewLocale } from '../state/previewLocale';
+
+function FlyCourseButton() {
+  const { patch } = usePlan();
+  const label = useUi().oppsummering.flyCourse;
+
+  function goToMap() {
+    patch({ view: 'profil', view3d: true });
+    const run = (left: number) => {
+      if (document.getElementById('kart')) {
+        scrollToId('kart');
+        return;
+      }
+      if (left > 0) window.setTimeout(() => run(left - 1), 80);
+    };
+    requestAnimationFrame(() => run(40));
+  }
+
+  return (
+    <button type="button" className="no-print btn oppsummering-band-print oppsummering-fly-btn" onClick={goToMap}>
+      {label}
+    </button>
+  );
+}
 
 export function OppsummeringPage() {
   const { state } = usePlan();
@@ -134,6 +157,7 @@ export function OppsummeringPage() {
               <div className="oppsummering-band-actions">
                 <ArmbandPrintButton />
                 <GarminExportButton plan={plan} />
+                <FlyCourseButton />
               </div>
             </div>
           </>
@@ -148,6 +172,7 @@ export function OppsummeringPage() {
           <div className="oppsummering-band-actions oppsummering-band-print--solo">
             <ArmbandPrintButton />
             <GarminExportButton plan={plan} />
+            <FlyCourseButton />
           </div>
         )}
       </div>

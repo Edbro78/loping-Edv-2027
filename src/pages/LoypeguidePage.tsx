@@ -34,6 +34,9 @@ function GuideIntro() {
             <Link to="/hoydeprofil">{m.nav.hoydeprofil}</Link> – {bl.hoydeprofil}
           </li>
           <li>
+            <Link to="/drikkestasjoner">{m.nav.drikkestasjoner}</Link> – {bl.drikkestasjoner}
+          </li>
+          <li>
             <Link to="/tempoplan">{m.nav.tempoplan}</Link> – {bl.tempoplan}
           </li>
           <li>

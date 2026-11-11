@@ -13,7 +13,7 @@ export function ArticleView({ doc }: Props) {
         <p className="kicker ink">{doc.kicker}</p>
         <h1>{doc.h1}</h1>
         <p className="lead">{doc.lead}</p>
-        {doc.homeToolLink && <HomeToolLink>{doc.homeToolLink}</HomeToolLink>}
+        {doc.homeToolLink && <HomeToolLink to={doc.homeToolTo}>{doc.homeToolLink}</HomeToolLink>}
         {doc.blocks.map((block, i) => {
           if (block.type === 'h2') return <h2 key={i}>{block.text}</h2>;
           if (block.type === 'pull') return <p className="pull" key={i}>{block.text}</p>;

@@ -10,6 +10,7 @@ import { HoydeprofilPage } from './pages/HoydeprofilPage';
 import { LoypeguidePage } from './pages/LoypeguidePage';
 import { TempoplanPage } from './pages/TempoplanPage';
 import { TempostrategiPage } from './pages/TempostrategiPage';
+import { DrikkestasjonerPage } from './pages/DrikkestasjonerPage';
 import { PraktiskPage } from './pages/PraktiskPage';
 import { TreningPage } from './pages/TreningPage';
 import { OmPage } from './pages/OmPage';
@@ -28,6 +29,7 @@ export function App() {
               <Route index element={<HomePage />} />
               <Route path="loypeguide" element={<LoypeguidePage />} />
               <Route path="hoydeprofil" element={<HoydeprofilPage />} />
+              <Route path="drikkestasjoner" element={<DrikkestasjonerPage />} />
               <Route path="tempoplan" element={<TempoplanPage />} />
               <Route path="tempostrategi" element={<TempostrategiPage />} />
               <Route path="praktisk" element={<PraktiskPage />} />

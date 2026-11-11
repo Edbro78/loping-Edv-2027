@@ -30,13 +30,16 @@ function devEntry(): Plugin {
   return {
     name: 'dev-entry',
     apply: 'serve',
-    transformIndexHtml(html) {
-      return html
-        .replace(/\s*<link rel="stylesheet" href="\.\/dist\/dashboard\.css"\s*\/?>/, '')
-        .replace(
-          '<script src="./dist/dashboard.js"></script>',
-          '<script>window.__BCM_VITE__=true</script><script type="module" src="/src/main.tsx"></script>',
-        );
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        return html
+          .replace(/\s*<link rel="stylesheet" href="(?:\.\/|\/)?dist\/dashboard\.css"\s*\/?>/, '')
+          .replace(
+            /<script src="(?:\.\/|\/)?dist\/dashboard\.js"><\/script>/,
+            '<script>window.__BCM_VITE__=true</script><script type="module" src="/src/main.tsx"></script>',
+          );
+      },
     },
   };
 }

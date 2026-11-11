@@ -900,6 +900,15 @@ html.preview-mobile { background: #12161c; }
   gap: 8px;
   flex: 0 0 auto;
 }
+.oppsummering-fly-btn {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  height: auto;
+  min-height: 42px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
 .btn.oppsummering-band-print:disabled {
   opacity: 0.5;
   cursor: not-allowed;

@@ -4,10 +4,11 @@ import { OwnerDeviceSeg, OwnerLangSeg } from './OwnerToolbar';
 import { useUi } from '../i18n/useUi';
 import { showOwnerTools } from '../state/previewLocale';
 
-const ROUTES: { to: string; key: 'home' | 'loypeguide' | 'hoydeprofil' | 'tempoplan' | 'tempostrategi' | 'praktisk' | 'trening' | 'om' | 'beste' }[] = [
+const ROUTES: { to: string; key: 'home' | 'loypeguide' | 'hoydeprofil' | 'drikkestasjoner' | 'tempoplan' | 'tempostrategi' | 'praktisk' | 'trening' | 'om' | 'beste' }[] = [
   { to: '/', key: 'home' },
   { to: '/loypeguide', key: 'loypeguide' },
   { to: '/hoydeprofil', key: 'hoydeprofil' },
+  { to: '/drikkestasjoner', key: 'drikkestasjoner' },
   { to: '/tempoplan', key: 'tempoplan' },
   { to: '/tempostrategi', key: 'tempostrategi' },
   { to: '/praktisk', key: 'praktisk' },

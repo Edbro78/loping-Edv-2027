@@ -8,6 +8,7 @@ const paths = [
   '/',
   '/loypeguide',
   '/hoydeprofil',
+  '/drikkestasjoner',
   '/tempoplan',
   '/tempostrategi',
   '/praktisk',

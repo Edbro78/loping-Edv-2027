@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 
 type Props = {
   children: ReactNode;
+  to?: string;
 };
 
-/** Lenke til verktøy på forsiden – brukes på artikkelsider uten duplisert UI. */
-export function HomeToolLink({ children }: Props) {
+/** Lenke til et verktøy – brukes på artikkelsider uten duplisert UI. */
+export function HomeToolLink({ children, to = '/' }: Props) {
   return (
     <p className="about-tool-link">
-      <Link to="/">{children}</Link>
+      <Link to={to}>{children}</Link>
     </p>
   );
 }

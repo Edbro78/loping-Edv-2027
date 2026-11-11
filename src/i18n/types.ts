@@ -9,6 +9,7 @@ export type ArticleDoc = {
   h1: string;
   lead: string;
   homeToolLink?: string;
+  homeToolTo?: string;
   blocks: ArticleBlock[];
   adSlots?: string[];
 };

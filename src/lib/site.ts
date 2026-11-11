@@ -39,6 +39,13 @@ export const ROUTES: RouteMeta[] = [
     schema: 'article',
   },
   {
+    path: '/drikkestasjoner',
+    title: 'Drikkestasjoner og toaletter – Bergen City Marathon 2027',
+    description:
+      'Drikkestasjoner, toaletter, vær, bekledning og praktiske tider langs BCM-løypa.',
+    schema: 'article',
+  },
+  {
     path: '/tempoplan',
     title: 'Tempoplan og kalkulator – Bergen City Marathon',
     description:
