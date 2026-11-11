@@ -61,6 +61,51 @@ export function TopNav() {
     drawerRef.current?.removeAttribute('open');
   }, [pathname]);
 
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const mq = window.matchMedia('(max-width: 840px)');
+    let timer = 0;
+    const scrollers = new Set<EventTarget>();
+    const addScroller = (target: EventTarget | null) => {
+      if (!target || scrollers.has(target)) return;
+      scrollers.add(target);
+      target.addEventListener('scroll', reveal, { passive: true });
+    };
+    const reveal = () => {
+      if (!mq.matches) {
+        el.classList.remove('is-nav-scrolling');
+        return;
+      }
+      el.classList.add('is-nav-scrolling');
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => el.classList.remove('is-nav-scrolling'), 900);
+    };
+    const onMq = () => {
+      if (!mq.matches) el.classList.remove('is-nav-scrolling');
+    };
+    const bindScrollers = () => {
+      addScroller(window);
+      let node = el.parentElement;
+      while (node) {
+        const overflow = getComputedStyle(node).overflowY;
+        if (overflow === 'auto' || overflow === 'scroll') addScroller(node);
+        node = node.parentElement;
+      }
+    };
+    mq.addEventListener('change', onMq);
+    bindScrollers();
+    window.addEventListener('wheel', reveal, { passive: true });
+    window.addEventListener('touchmove', reveal, { passive: true });
+    return () => {
+      mq.removeEventListener('change', onMq);
+      window.removeEventListener('wheel', reveal);
+      window.removeEventListener('touchmove', reveal);
+      scrollers.forEach((target) => target.removeEventListener('scroll', reveal));
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   const closeDrawer = () => drawerRef.current?.removeAttribute('open');
 
   return (
