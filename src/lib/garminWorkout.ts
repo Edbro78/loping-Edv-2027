@@ -1,5 +1,5 @@
 import { Encoder, Profile, type FileIdMesg, type WorkoutMesg, type WorkoutStepMesg } from '@garmin/fitsdk';
-import type { TerrKey } from '../config';
+import { LAP, type TerrKey } from '../config';
 import { ui } from '../i18n/ui';
 import type { Locale } from '../state/previewLocale';
 import { kmL } from './format';
@@ -61,6 +61,12 @@ export type GarminWorkoutOptions = {
   maxSteps?: number;
   serialNumber?: number;
   timeCreated?: Date;
+  /** Kutt planen til dette intervallet, i kilometer langs løpet. */
+  fromKm?: number;
+  toKm?: number;
+  /** Kort navn på klokka. Brukes når filen bare er et utsnitt. */
+  name?: string;
+  filename?: string;
 };
 
 export type GarminWorkoutFile = {
@@ -108,18 +114,40 @@ export function garminWorkoutName(plan: Plan): string {
   return `BCM ${h}:${pad(m)}:${pad(s)}`.slice(0, NAME_MAX);
 }
 
+/** Første 10 km fra start, og siste del av løpet fra Haraldsplass til mål. */
+export function garminSegmentRange(plan: Plan, kind: 'first' | 'last'): { fromKm: number; toKm: number } {
+  if (kind === 'first') return { fromKm: 0, toKm: 10 };
+  return { fromKm: plan.input.full ? LAP + 10 : 10, toKm: plan.D };
+}
+
+export function garminRangeFilename(plan: Plan, kind: 'first' | 'last'): string {
+  const { h, m, s } = clockParts(plan.input.T);
+  const tag = kind === 'first' ? '10km' : '11-2km';
+  return `BCM-${tag}-${h}-${pad(m)}-${pad(s)}.fit`;
+}
+
 /** Stegene slik de blir kodet, etter eventuell sammenslåing og GPS-faktor. */
 export function workoutStepsFromPlan(plan: Plan, options: GarminWorkoutOptions = {}): { steps: GarminStep[]; merged: boolean } {
   const opts = resolveOptions(options);
-  const raw = opts.mode === 'km' ? kmSteps(plan) : segmentSteps(plan, opts.locale);
+  const range = rangeOf(plan, options);
+  const raw = range
+    ? stepsInRange(plan, range.fromKm, range.toKm, opts.mode, opts.locale)
+    : opts.mode === 'km'
+      ? kmSteps(plan)
+      : segmentSteps(plan, opts.locale);
   if (raw.length === 0) throw new GarminWorkoutError('invalid-distance');
 
   for (const step of raw) assertStep(step, opts.toleranceSec);
 
   const sum = raw.reduce((total, step) => total + step.meters, 0);
-  const official = plan.input.full ? OFFICIAL_M.full : OFFICIAL_M.half;
-  if (Math.abs(sum - plan.D * 1000) > PLAN_SUM_TOLERANCE_M || Math.abs(sum - official) > OFFICIAL_TOLERANCE_M) {
-    throw new GarminWorkoutError('distance-mismatch');
+  if (range) {
+    const expected = (range.toKm - range.fromKm) * 1000;
+    if (Math.abs(sum - expected) > PLAN_SUM_TOLERANCE_M) throw new GarminWorkoutError('distance-mismatch');
+  } else {
+    const official = plan.input.full ? OFFICIAL_M.full : OFFICIAL_M.half;
+    if (Math.abs(sum - plan.D * 1000) > PLAN_SUM_TOLERANCE_M || Math.abs(sum - official) > OFFICIAL_TOLERANCE_M) {
+      throw new GarminWorkoutError('distance-mismatch');
+    }
   }
 
   const collapsed = collapseGarminSteps(raw, opts.maxSteps);
@@ -164,7 +192,7 @@ export function createGarminWorkout(plan: Plan, options: GarminWorkoutOptions = 
   const workout: WorkoutMesg = {
     sport: 'running',
     subSport: 'road',
-    wktName: garminWorkoutName(plan),
+    wktName: options.name ? fitLabel(options.name) : garminWorkoutName(plan),
     numValidSteps: prepared.steps.length,
   };
   encoder.onMesg(Profile.MesgNum.FILE_ID, fileId);
@@ -187,7 +215,7 @@ export function createGarminWorkout(plan: Plan, options: GarminWorkoutOptions = 
   });
   return {
     bytes: encoder.close(),
-    filename: garminFilename(plan),
+    filename: options.filename || garminFilename(plan),
     stepCount: prepared.steps.length,
     merged: prepared.merged,
   };
@@ -197,25 +225,51 @@ export function buildGarminWorkout(plan: Plan, options: GarminWorkoutOptions = {
   return createGarminWorkout(plan, options).bytes;
 }
 
-function segmentSteps(plan: Plan, locale: Locale): GarminStep[] {
+type Span = { a: number; b: number; name: string };
+
+function segmentSpans(plan: Plan, locale: Locale): Span[] {
   const marks = splitMarks(plan.input.full, ui[locale].marks);
+  const spans: Span[] = [];
+  for (let i = 1; i < marks.length; i++) spans.push({ a: marks[i - 1].km, b: marks[i].km, name: marks[i].name });
+  return spans;
+}
+
+function kmSpans(plan: Plan): Span[] {
+  const spans: Span[] = [];
+  for (let a = 0; a < plan.D - 1e-6; a += 1) {
+    const b = Math.min(plan.D, a + 1);
+    const label = Math.abs(b - plan.D) < 0.02 && b - a < 0.999 ? kmL(b) : String(Math.round(a + 1));
+    spans.push({ a, b, name: label });
+  }
+  return spans;
+}
+
+function segmentSteps(plan: Plan, locale: Locale): GarminStep[] {
+  return segmentSpans(plan, locale).map((span) => stepBetween(plan, span.a, span.b, span.name));
+}
+
+function kmSteps(plan: Plan): GarminStep[] {
+  return kmSpans(plan).map((span) => stepBetween(plan, span.a, span.b, span.name));
+}
+
+function stepsInRange(plan: Plan, fromKm: number, toKm: number, mode: GarminMode, locale: Locale): GarminStep[] {
+  const spans = mode === 'km' ? kmSpans(plan) : segmentSpans(plan, locale);
   const steps: GarminStep[] = [];
-  for (let i = 1; i < marks.length; i++) {
-    const a = marks[i - 1].km;
-    const b = marks[i].km;
-    steps.push(stepBetween(plan, a, b, marks[i].name));
+  for (const span of spans) {
+    const a = Math.max(span.a, fromKm);
+    const b = Math.min(span.b, toKm);
+    if (b - a <= 0.02) continue;
+    steps.push(stepBetween(plan, a, b, span.name));
   }
   return steps;
 }
 
-function kmSteps(plan: Plan): GarminStep[] {
-  const steps: GarminStep[] = [];
-  for (let a = 0; a < plan.D - 1e-6; a += 1) {
-    const b = Math.min(plan.D, a + 1);
-    const label = Math.abs(b - plan.D) < 0.02 && b - a < 0.999 ? kmL(b) : String(Math.round(a + 1));
-    steps.push(stepBetween(plan, a, b, label));
-  }
-  return steps;
+function rangeOf(plan: Plan, options: GarminWorkoutOptions): { fromKm: number; toKm: number } | null {
+  if (options.fromKm == null && options.toKm == null) return null;
+  const fromKm = options.fromKm ?? 0;
+  const toKm = options.toKm ?? plan.D;
+  if (!(toKm > fromKm) || fromKm < -1e-6 || toKm > plan.D + 1e-6) throw new GarminWorkoutError('invalid-distance');
+  return { fromKm, toKm };
 }
 
 function stepBetween(plan: Plan, a: number, b: number, name: string): GarminStep {

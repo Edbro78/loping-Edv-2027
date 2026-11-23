@@ -7,6 +7,8 @@ import {
   collapseGarminSteps,
   createGarminWorkout,
   fitLabel,
+  garminRangeFilename,
+  garminSegmentRange,
   workoutStepsFromPlan,
   type GarminStep,
 } from './garminWorkout';
@@ -154,6 +156,55 @@ describe('buildGarminWorkout', () => {
     expect(tight.merged).toBe(true);
     expect(tight.stepCount).toBeLessThanOrEqual(8);
     expect(Decoder.isFIT(Stream.fromByteArray(Array.from(tight.bytes)))).toBe(true);
+  });
+});
+
+describe('utsnitt av tempoplanen', () => {
+  const half = buildPlan(reserveElev, halfInput);
+  const full = buildPlan(reserveElev, fullInput);
+
+  function pace(plan: Plan, from: number, to: number) {
+    const steps = workoutStepsFromPlan(plan, { ...fixed, fromKm: from, toKm: to }).steps;
+    const meters = steps.reduce((sum, step) => sum + step.meters, 0);
+    const weighted = steps.reduce((sum, step) => sum + step.paceSecPerKm * step.meters, 0);
+    return { meters, pace: weighted / meters };
+  }
+
+  it('bruker samme fart som planen på de første 10 km og fra Haraldsplass', () => {
+    const first = pace(half, 0, 10);
+    expect(first.meters).toBeCloseTo(10000, 0);
+    const opening = half.agg(0, 10);
+    expect(first.pace).toBeCloseTo((opening.t + opening.stops) / opening.len, 2);
+
+    const last = pace(half, 10, half.D);
+    expect(last.meters).toBeCloseTo((half.D - 10) * 1000, 0);
+    const closing = half.agg(10, half.D);
+    expect(last.pace).toBeCloseTo((closing.t + closing.stops) / closing.len, 2);
+  });
+
+  it('tar siste del av maraton fra andre runde, der løpet faktisk slutter', () => {
+    const range = garminSegmentRange(full, 'last');
+    expect(range.fromKm).toBeCloseTo(31.097, 3);
+    expect(range.toKm).toBeCloseTo(full.D, 3);
+    const end = pace(full, range.fromKm, range.toKm);
+    expect(end.meters).toBeCloseTo((full.D - range.fromKm) * 1000, 0);
+
+    const negative = buildPlan(reserveElev, { ...fullInput, split: 'negativ', sigma: 4 });
+    const early = pace(negative, 10, 21.097);
+    const late = pace(negative, garminSegmentRange(negative, 'last').fromKm, negative.D);
+    expect(late.pace).toBeLessThan(early.pace);
+
+    const file = createGarminWorkout(full, {
+      ...fixed,
+      ...range,
+      name: 'BCM 11.2 km',
+      filename: garminRangeFilename(full, 'last'),
+    });
+    expect(file.filename).toBe('BCM-11-2km-3-30-00.fit');
+    const messages = decode(file.bytes);
+    expect(messages.workoutMesgs?.[0].wktName).toBe('BCM 11.2 km');
+    const sum = (messages.workoutStepMesgs ?? []).reduce((total, step) => total + Number(step.durationDistance), 0);
+    expect(sum).toBeCloseTo(end.meters, 0);
   });
 });
 
